@@ -1,0 +1,15 @@
+# Python / Backend
+backend/venv/
+backend/.env
+__pycache__/
+
+# Node.js / Frontend
+frontend/node_modules/
+
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
