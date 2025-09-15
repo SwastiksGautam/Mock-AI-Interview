@@ -172,22 +172,14 @@ function App() {
         try {
             const data = await submitAnswer(sessionId, answer);
 
-            // <<< ADD THIS BLOCK AT THE TOP
-            if (data.error) {
-                if (data.new_session_id) {
-                    setSessionId(data.new_session_id);
-                    setError("Session was invalid. Restarted automatically.");
-                    // Optionally, you can fetch the first question of the new session
-                    if (data.question) {
-                        setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
-                    }
-                } else {
-                    setError(`Backend error: ${data.error}`);
-                    setInterviewState('not_started');
-                }
-                return; // stop further processing
+            // Handle invalid session automatically
+            if (data.error && data.new_session_id) {
+                setSessionId(data.new_session_id);  // update frontend session
+                setError("Session was invalid. Restarted automatically.");
+                setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
+                setIsLoading(false);
+                return;
             }
-            // <<< END OF BLOCK
 
             if (data.summary) {
                 setSummary(data.summary);

@@ -4,14 +4,15 @@ from app.routes import interview
 
 app = FastAPI()  # <-- Gunicorn looks for this exact name
 
+
 origins = [
-    "http://localhost:3000",
     "https://mock-ai-interview-psi.vercel.app",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins,          # <-- frontend URLs allowed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
