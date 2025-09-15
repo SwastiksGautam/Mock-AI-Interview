@@ -9,11 +9,9 @@ load_dotenv()
 
 app = FastAPI()
 
-# The list of origins that are allowed to make requests.
-# Add your Vercel URL here.
 origins = [
-    "https://mock-ai-interview-psi.vercel.app",  # Your Vercel frontend URL
-    "http://localhost:3000",                     # For local development
+    "https://mock-ai-interview-psi.vercel.app",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
