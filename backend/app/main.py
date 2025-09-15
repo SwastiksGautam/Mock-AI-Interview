@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import uuid
 import csv
 import os
+import json
 from datetime import datetime
 
 # ------------------- App Setup -------------------
@@ -37,8 +38,19 @@ class AnswerRequest(BaseModel):
 RESULTS_DIR = "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-# Keep session info in memory
-active_sessions = {}
+SESSIONS_FILE = "sessions.json"
+
+# Load sessions from file if exists
+if os.path.exists(SESSIONS_FILE):
+    with open(SESSIONS_FILE, "r") as f:
+        active_sessions = json.load(f)
+else:
+    active_sessions = {}
+
+# Helper function to save sessions to disk
+def save_sessions():
+    with open(SESSIONS_FILE, "w") as f:
+        json.dump(active_sessions, f, indent=2, default=str)
 
 # ------------------- Routes -------------------
 @app.post("/start")
@@ -46,8 +58,10 @@ def start_interview(request: StartRequest):
     session_id = str(uuid.uuid4())
     active_sessions[session_id] = {
         "candidate_name": request.candidate_name,
-        "start_time": datetime.now().isoformat()
+        "start_time": datetime.now().isoformat(),
+        "last_question_index": -1  # no question answered yet
     }
+    save_sessions()  # persist session
 
     # Create CSV file for storing answers
     csv_file = os.path.join(RESULTS_DIR, f"{session_id}.csv")
@@ -59,27 +73,33 @@ def start_interview(request: StartRequest):
 
     return {"session_id": session_id, "question": first_question}
 
+
 @app.post("/answer")
 def submit_answer(payload: AnswerRequest):
-    # Handle invalid session: generate new session automatically
+    # Handle invalid session: create new session automatically
     if payload.session_id not in active_sessions:
         new_session_id = str(uuid.uuid4())
         active_sessions[new_session_id] = {
             "candidate_name": "Anonymous",
-            "start_time": datetime.now().isoformat()
+            "start_time": datetime.now().isoformat(),
+            "last_question_index": -1
         }
+        save_sessions()
+
         # create new CSV file
         csv_file = os.path.join(RESULTS_DIR, f"{new_session_id}.csv")
         with open(csv_file, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=["question_index", "answer", "evaluation_score", "feedback"])
             writer.writeheader()
+
         return {
             "error": "Invalid session ID. Started new session automatically.",
             "new_session_id": new_session_id,
             "question": {"text": "What is the keyboard shortcut to lock a cell reference in Excel?"}
         }
 
-    csv_file = os.path.join(RESULTS_DIR, f"{payload.session_id}.csv")
+    session_id = payload.session_id
+    csv_file = os.path.join(RESULTS_DIR, f"{session_id}.csv")
     if not os.path.exists(csv_file):
         raise HTTPException(status_code=500, detail="Session file missing. Please restart.")
 
@@ -92,6 +112,10 @@ def submit_answer(payload: AnswerRequest):
             "evaluation_score": payload.evaluation_score,
             "feedback": payload.feedback
         })
+
+    # Update session
+    active_sessions[session_id]["last_question_index"] = payload.question_index
+    save_sessions()  # persist updated session
 
     # For demo, send next question or summary
     next_question_index = payload.question_index + 1
