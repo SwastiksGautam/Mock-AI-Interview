@@ -6,7 +6,7 @@ import io
 import openai
 from pydantic import BaseModel
 from fastapi import UploadFile, HTTPException
-from pydub import AudioSegment
+
 
 
 # Load the OpenAI API key
@@ -125,11 +125,6 @@ def generate_transition(feedback: str, next_question: str) -> str:
 # -------------------------------
 # Audio Transcription with Whisper
 # -------------------------------
-# app/services/evaluator.py
-# ... other imports (remove 'pydub' and 'io')
-from fastapi import UploadFile, HTTPException
-
-# ... all other functions ...
 
 def transcribe_audio(audio_file: UploadFile) -> str:
     """
