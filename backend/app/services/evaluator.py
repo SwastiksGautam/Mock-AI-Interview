@@ -6,8 +6,7 @@ import io
 import openai
 from pydantic import BaseModel
 from fastapi import UploadFile, HTTPException
-
-# Note: No 'from pydub import AudioSegment' import
+from pydub import AudioSegment
 
 # Load the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -127,18 +126,32 @@ def generate_transition(feedback: str, next_question: str) -> str:
 # -------------------------------
 def transcribe_audio(audio_file: UploadFile) -> str:
     """
-    Transcribes an audio file to text using OpenAI's Whisper model.
-    Streams the file content directly to the API without conversion.
+    Transcribes an uploaded audio file directly from memory.
     """
     try:
-        if audio_file.file is None:
-            raise HTTPException(status_code=400, detail="Audio file is empty.")
-
+        # Pydub requires the file to be seekable, so we read its content first
+        file_content = audio_file.file.read()
+        
+        # Check if the file is empty
+        if not file_content:
+            return "Voice not recorded"
+        
+        # Load audio from in-memory content using a BytesIO object
+        audio = AudioSegment.from_file(io.BytesIO(file_content), format="webm")
+        
+        # Export the audio to a standard WAV format in memory
+        wav_io = io.BytesIO()
+        audio.export(wav_io, format="wav")
+        wav_io.seek(0) # Reset buffer position
+        
+        # Send the in-memory WAV file content to the OpenAI API
         response = openai.audio.transcriptions.create(
             model="whisper-1",
-            file=audio_file.file
+            file=(audio_file.filename.replace('.webm', '.wav'), wav_io.read(), "audio/wav")
         )
+        
         return response.text
+    
     except Exception as e:
         print(f"Whisper Transcription Error: {e}")
         raise HTTPException(status_code=500, detail="Transcription failed. Please check your audio format.")
@@ -170,16 +183,3 @@ def generate_summary_feedback(history: list):
     except Exception as e:
         print(f"AI Summary Generation Error: {e}")
         return {"strengths": ["Basic understanding of Excel formulas"], "areas_for_improvement": ["Need to improve on advanced features"]}
-
-
-
-
-
-
-
-
-
-
-
-
-
