@@ -38,9 +38,24 @@ def submit_answer(payload: AnswerRequest):
     session_id = payload.session_id
     candidate_answer = payload.answer
 
+    # --- HANDLE INVALID SESSION ---
     if session_id not in sessions:
-        return {"error": "Invalid session ID"}
+        # Generate new session automatically
+        new_session_id = str(uuid.uuid4())
+        sessions[new_session_id] = {
+            "current_index": 0,
+            "answers": []
+        }
+        first_question = {
+            "text": mock_questions[0]["question_text"]
+        }
+        return {
+            "error": "Invalid session ID. A new session has been started.",
+            "new_session_id": new_session_id,
+            "question": first_question
+        }
 
+    # --- NORMAL SESSION PROCESSING ---
     session = sessions[session_id]
     current_idx = session["current_index"]
 
@@ -69,7 +84,7 @@ def submit_answer(payload: AnswerRequest):
 
     # Check if we've reached the max questions per session
     if session["current_index"] >= MAX_QUESTIONS_PER_SESSION or session["current_index"] >= len(mock_questions):
-        # Return summary after 5 questions or no more questions available
+        # Return summary after max questions or no more questions available
         total_answers = session["answers"]
         avg_score = sum(ans["evaluation"]["average_score"] for ans in total_answers) / len(total_answers)
 
