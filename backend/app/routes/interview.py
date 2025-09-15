@@ -1,12 +1,12 @@
 # app/services/evaluator.py
 import os
 import json
+import uuid
 import io
 import openai
 from pydantic import BaseModel
 from fastapi import UploadFile, HTTPException
-
-
+from pydub import AudioSegment  # New import
 
 # Load the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -126,41 +126,31 @@ def generate_transition(feedback: str, next_question: str) -> str:
 # -------------------------------
 def transcribe_audio(audio_file: UploadFile) -> str:
     """
-    Transcribes an uploaded audio file.
+    Transcribes an uploaded audio file directly from memory.
     """
-    temp_dir = "temp_audio"
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
-        
-    temp_filename = f"{temp_dir}/{uuid.uuid4()}-{audio_file.filename}"
-    
     try:
-        # Read the file content into a bytes object in memory
-        file_content = audio_file.file.read()
-        
         # Check if the file is empty before proceeding
-        if not file_content or os.path.getsize(temp_filename) == 0:
-            os.remove(temp_filename)
-            return "Voice not recorded" # <-- Returns a specific string instead of raising an error
+        if audio_file.file is None or audio_file.file.tell() == 0:
+            return "Voice not recorded"
             
-        # Use pydub to load the file from disk and process it
-        audio = AudioSegment.from_file(temp_filename, format="webm")
+        # Pydub needs to read from a file-like object, which UploadFile.file is
+        audio_file.file.seek(0) # Reset the file pointer to the beginning
+        audio = AudioSegment.from_file(audio_file.file, format="webm")
+        
+        # Export the audio to WAV format into an in-memory buffer
         wav_io = io.BytesIO()
         audio.export(wav_io, format="wav")
-        wav_io.seek(0)
+        wav_io.seek(0) # Reset the buffer position
         
-        # Send the new WAV file content to the OpenAI API
+        # Send the in-memory WAV file content to the OpenAI API
         response = openai.audio.transcriptions.create(
             model="whisper-1",
             file=(audio_file.filename.replace('.webm', '.wav'), wav_io.read(), "audio/wav")
         )
         
-        os.remove(temp_filename) # Clean up the temporary file
         return response.text
     
     except Exception as e:
-        if os.path.exists(temp_filename):
-            os.remove(temp_filename)
         print(f"Whisper Transcription Error: {e}")
         raise HTTPException(status_code=500, detail="Transcription failed. Please check your audio format.")
 
