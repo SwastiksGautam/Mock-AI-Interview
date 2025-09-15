@@ -172,23 +172,26 @@ function App() {
 
         setChatHistory(prev => [...prev, { sender: 'user', text: answer }]);
         setIsLoading(true);
+        setError(null);
 
         try {
             const data = await submitAnswer(sessionId, answer);
-            console.log('Backend response:', data);
 
             if (data.error) {
-                setError(`Backend error: ${data.error}`);
+                // Handle invalid session
+                setError(`Backend error: ${data.error}. Please restart the interview.`);
+                setInterviewState('not_started');
+                setSessionId(null);
+                setChatHistory([]);
+                setSummary(null);
                 return;
             }
 
             if (data.summary) {
                 setSummary(data.summary);
                 setInterviewState('completed');
-            } else if (data.question?.text) {
+            } else if (data.question) {
                 setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
-            } else {
-                setChatHistory(prev => [...prev, { sender: 'ai', text: 'Next question is not available yet.' }]);
             }
         } catch (err) {
             setError('An error occurred. Please try submitting your answer again.');
