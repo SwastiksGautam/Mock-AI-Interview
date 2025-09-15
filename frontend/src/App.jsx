@@ -165,11 +165,6 @@ function App() {
 
 
     const handleAnswerSubmit = async (answer) => {
-        if (!sessionId) {
-            setError("No valid session. Please restart the interview.");
-            return;
-        }
-
         setChatHistory(prev => [...prev, { sender: 'user', text: answer }]);
         setIsLoading(true);
         setError(null);
@@ -177,15 +172,22 @@ function App() {
         try {
             const data = await submitAnswer(sessionId, answer);
 
+            // <<< ADD THIS BLOCK AT THE TOP
             if (data.error) {
-                // Handle invalid session
-                setError(`Backend error: ${data.error}. Please restart the interview.`);
-                setInterviewState('not_started');
-                setSessionId(null);
-                setChatHistory([]);
-                setSummary(null);
-                return;
+                if (data.new_session_id) {
+                    setSessionId(data.new_session_id);
+                    setError("Session was invalid. Restarted automatically.");
+                    // Optionally, you can fetch the first question of the new session
+                    if (data.question) {
+                        setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
+                    }
+                } else {
+                    setError(`Backend error: ${data.error}`);
+                    setInterviewState('not_started');
+                }
+                return; // stop further processing
             }
+            // <<< END OF BLOCK
 
             if (data.summary) {
                 setSummary(data.summary);
@@ -199,7 +201,6 @@ function App() {
             setIsLoading(false);
         }
     };
-
 
 
 

@@ -1,29 +1,25 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-from app.routes import interview
+from fastapi import APIRouter
+from pydantic import BaseModel
 
-import os
+router = APIRouter()
 
-load_dotenv()
+sessions = {}  # example in-memory session storage
 
-app = FastAPI()
+class AnswerPayload(BaseModel):
+    session_id: str
+    answer: str
 
-origins = [
-    "https://mock-ai-interview-psi.vercel.app",
-    "http://localhost:3000",
-]
+@router.post("/answer")
+def submit_answer(payload: AnswerPayload):
+    session_id = payload.session_id
+    answer = payload.answer
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    if session_id not in sessions:
+        return {
+            "error": "Invalid session ID. Please restart the interview."
+        }
 
-app.include_router(interview.router)
-
-@app.get("/")
-def root():
-    return {"message": "Excel Mock Interviewer Backend Running"}
+    # normal processing here
+    session = sessions[session_id]
+    # ... compute next question or summary
+    return {"question": session.get_next_question()}
