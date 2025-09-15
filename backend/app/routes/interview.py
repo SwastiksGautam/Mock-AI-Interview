@@ -1,28 +1,30 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-
 import uuid
 
-router = APIRouter()
+from app.services.mock_database import mock_questions
+from app.services.evaluator import evaluate_answer, generate_transition
 
-# Simple in-memory session store (for demonstration)
+router = APIRouter()
 sessions = {}
 
 class AnswerRequest(BaseModel):
     session_id: str
     answer: str
 
-@router.get("/interview-question")
-def get_interview_question():
-    return {"question": "What is a circular import?"}
-
 @router.post("/start")
 def start_interview():
     session_id = str(uuid.uuid4())
-    first_question = {
-        "text": "What is a circular import?"
+
+    # Initialize session state
+    sessions[session_id] = {
+        "current_index": 0  # Start at first question (index 0)
     }
-    sessions[session_id] = {"question_count": 1}
+
+    first_question = {
+        "text": mock_questions[0]["question_text"]
+    }
+
     return {
         "session_id": session_id,
         "question": first_question
@@ -31,29 +33,50 @@ def start_interview():
 @router.post("/answer")
 def submit_answer(payload: AnswerRequest):
     session_id = payload.session_id
-    answer = payload.answer
+    candidate_answer = payload.answer
 
     if session_id not in sessions:
         return {"error": "Invalid session ID"}
 
-    sessions[session_id]["question_count"] += 1
+    session = sessions[session_id]
+    current_idx = session["current_index"]
 
-    # For simplicity: After 3 questions, send a summary
-    if sessions[session_id]["question_count"] > 3:
+    # Get current question data
+    current_question = mock_questions[current_idx]
+    ideal_answer = current_question["ideal_answer"]
+
+    # Evaluate answer
+    evaluation = evaluate_answer(
+        question_text=current_question["question_text"],
+        candidate_answer=candidate_answer,
+        ideal_answer=ideal_answer
+    )
+
+    # Move to next question
+    session["current_index"] += 1
+
+    if session["current_index"] >= len(mock_questions):
+        # Interview complete → return summary
         return {
             "summary": {
-                "overall_score": 4.2,
-                "strengths": ["Good understanding of concepts"],
-                "areas_for_improvement": ["Elaborate answers more"],
-                "detailed_feedback": "Well done, but try to give examples next time."
+                "overall_score": evaluation["average_score"],
+                "strengths": ["Good understanding of Excel concepts"],
+                "areas_for_improvement": ["Elaborate more with examples"],
+                "detailed_feedback": evaluation["feedback"]
             }
         }
 
-    # Otherwise, send the next question
-    next_question = {
-        "text": f"This is question #{sessions[session_id]['question_count']}: Explain polymorphism."
-    }
+    # Next question
+    next_question_text = mock_questions[session["current_index"]]["question_text"]
+
+    # Generate a transition sentence
+    transition = generate_transition(
+        feedback=evaluation["feedback"],
+        next_question=next_question_text
+    )
 
     return {
-        "question": next_question
+        "evaluation": evaluation,
+        "question": {"text": next_question_text},
+        "transition": transition
     }
