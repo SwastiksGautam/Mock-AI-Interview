@@ -69,7 +69,7 @@ def submit_answer(request: AnswerRequest):
         
         # Move to the next question
         current_stage = session["stage"]
-        next_stage_threshold = 3
+        next_stage_threshold = 5
         
         if len(session["questions_asked"]) >= next_stage_threshold:
             return {"session_id": session_id, "summary": generate_summary(session)}

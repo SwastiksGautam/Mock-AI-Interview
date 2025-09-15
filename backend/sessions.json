@@ -6,6 +6,58 @@
         "id": "c13630a0-8bda-4ff5-9f5e-60509ddc37c8",
         "question_text": "What are some common methods to handle missing data in Excel, and when would you use them?",
         "ideal_answer": "In Excel, missing data can be handled in various ways depending on the context and requirement. Some common methods include: \n1. Using the function `IFERROR()` to replace errors, which often represent missing data, with a default value like zero or a custom message. This is useful in calculations where excluding errors or substituting them can aid in more accurate results.\n2. Using `ISBLANK()` in combination with `IF()` function to test if cells are empty and then deciding to substitute them with a specified value or to perform a different action. This method is particularly useful in data entry and cleaning processes to ensure data completeness.\n3. Applying filters to either temporarily remove or assess the extent of missing data without actually altering the original data set. This is helpful for analysis and decision-making processes.\n4. Utilizing conditional formatting to highlight missing values, which helps in visually scanning and identifying gaps in large datasets prior to performing any further analysis or data processing."
+      },
+      {
+        "id": "7664e39f-c185-4f05-a395-e59d261d7ebc",
+        "question_text": "In Excel, how would you conditionally format a range of cells based on whether their values are above or below the average of that range?",
+        "ideal_answer": "To conditionally format a range of cells based on whether their values are above or below the average, you would follow these steps: \n1. Select the range of cells you want to format. \n2. Go to the 'Home' tab, click on 'Conditional Formatting' in the Styles group and choose 'New Rule'. \n3. In the New Formatting Rule dialog box, select 'Use a formula to determine which cells to format'. \n4. Enter the formula '=A1>AVERAGE($A$1:$A$10)' in the format values where this formula is true box to format cells that are above the average, by replacing 'A1' and 'A$1:$A$10' with the appropriate cell references for your data. \n5. Click on 'Format', choose the formatting options you want to apply when the condition is true, and then click 'OK'. \n6. To add a rule for below the average, repeat the steps, but use the formula '=A1<AVERAGE($A$1:$A$10)'. \nThis method uses Conditional Formatting with a custom formula that dynamically checks if each cell's value is above or below the average of the specified range and applies the chosen formatting style based on the result."
+      },
+      {
+        "id": "21753dd3-4756-4953-8dd6-da112321d138",
+        "question_text": "Explain how you would use conditional formatting in Excel to highlight cells that are above the average value in a list of numbers. Include how you would set up the conditional formatting rule.",
+        "ideal_answer": "To highlight cells above the average in a list using conditional formatting in Excel, you first select the cells that contain the list of numbers. Then, go to the 'Home' tab and click on 'Conditional Formatting' in the 'Styles' group. Choose 'New Rule' and then select 'Use a formula to determine which cells to format'. Enter the formula '=A1>AVERAGE($A$1:$A$10)' if your list is in cells A1 to A10, adjusting the range accordingly to your list. Click 'Format', choose your desired formatting style, such as setting the fill color to yellow, and then click 'OK'. Finally, click 'OK' again to apply the rule. This rule will now highlight any cell in the range whose value is greater than the average of all values in the specified range."
+      }
+    ],
+    "history": [
+      {
+        "question_id": "c13630a0-8bda-4ff5-9f5e-60509ddc37c8",
+        "question_text": "What are some common methods to handle missing data in Excel, and when would you use them?",
+        "answer": "i dont know",
+        "evaluation": {
+          "average_score": 1.0,
+          "feedback": "The answer provided fails to meet the expectations for a technical role involving Excel data analysis. Simply stating a lack of knowledge does not demonstrate any expertise or understanding of handling missing data in Excel, which is a fundamental skill for data-related tasks. It would be beneficial to familiarize yourself with basic Excel functions such as IFERROR, ISBLANK, and methods like filtering and conditional formatting, which are essential for data management and analysis.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "7664e39f-c185-4f05-a395-e59d261d7ebc",
+        "question_text": "In Excel, how would you conditionally format a range of cells based on whether their values are above or below the average of that range?",
+        "answer": "Select the Range:\n\nHighlight the cells you want to format. For example, B2:B20.\n\nOpen Conditional Formatting:\n\nGo to Home \u2192 Conditional Formatting \u2192 New Rule.\n\nChoose Formula-Based Rule:\n\nSelect \u201cUse a formula to determine which cells to format\u201d.\n\nCreate the Rule for Above Average:",
+        "evaluation": {
+          "average_score": 2.75,
+          "feedback": "Your initial steps for selecting the range and navigating to Conditional Formatting were correct, laying a good foundation. However, you did not complete the explanation, particularly failing to specify the formulas required for determining if the cell values are above or below average. This incomplete guidance leaves out critical details needed for implementing the solution effectively. Also, the response could be improved by ensuring the formula's accuracy and adaptability to different ranges, not just a predefined set of cells. It\u2019s important to detail both the setting of conditional formats for above and below average scenarios to meet the requirements of the query.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "21753dd3-4756-4953-8dd6-da112321d138",
+        "question_text": "Explain how you would use conditional formatting in Excel to highlight cells that are above the average value in a list of numbers. Include how you would set up the conditional formatting rule.",
+        "answer": "Select the Range of Numbers\nFor example, suppose your numbers are in A2:A20. Highlight this range.\n\nOpen Conditional Formatting\nGo to the Home tab \u2192 Conditional Formatting \u2192 New Rule.\n\nChoose a Formula-Based Rule\nSelect \u201cUse a formula to determine which cells to format.\u201d",
+        "evaluation": {
+          "average_score": 2.75,
+          "feedback": "Your response provides a basic understanding of how to initiate conditional formatting with a formula in Excel, laying out a simple step-by-step process up to the point of selecting the formula-based rule. However, the answer misses specific details like how to correctly write and apply the conditional formatting formula to highlight cells above average, the step of choosing formatting options, and the final steps to apply the rule. Additionally, mentioning explicitly the range in the formula (e.g., '$A$2:$A$20') and the need for absolute references to ensure the formula applies consistently across the range would make your explanation more practical and easier to follow. Adding a closure on how to apply and confirm the conditional format settings would enhance the completeness of your answer.",
+          "is_sufficient": false
+        }
+      }
+    ]
+  },
+  "211c487c-b6e4-4717-b6ab-d56711c79ab1": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "169f7718-c3e7-417b-ab40-6c821d708506",
+        "question_text": "Explain how to use the PivotTable feature in Excel to analyze sales data. What are the steps to create a PivotTable, and how can you use it to summarize data by region and product type?",
+        "ideal_answer": "To use PivotTable for analyzing sales data, you first need to ensure your data range is formatted as a table with clear column headers. This data should include at least the regions, product types, and sales figures. \n\nStep 1: Select any cell within your dataset. \nStep 2: Go to the 'Insert' tab on the ribbon and click 'PivotTable'. A dialog box will appear. \nStep 3: In the 'Create PivotTable' dialog box, choose whether you want the PivotTable to be placed in a new worksheet or an existing one. \nStep 4: After clicking 'OK,' Excel will create a blank PivotTable and display a list of field names (column headers) in the PivotTable field list. \nStep 5: Drag the 'Region' field to the Rows area, and the 'Product Type' field to the Columns area. Drag the 'Sales' field to the Values area. This setup will summarize sales data, showing total sales per product type across each region. \n\nPivotTables are powerful because they allow you to quickly reorganize and summarize large amounts of data, filtering and sorting as necessary. Additionally, using the PivotTable tools, you can format the summary into a report-friendly layout, apply conditional formatting, and insert calculated fields to further your analysis."
       }
     ],
     "history": []
