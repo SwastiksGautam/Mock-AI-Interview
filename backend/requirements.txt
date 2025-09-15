@@ -4,3 +4,4 @@ openai
 python-dotenv
 gunicorn
 sqlalchemy>=2.0
+python-multipart
