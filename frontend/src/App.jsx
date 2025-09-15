@@ -17,7 +17,8 @@ const ExcelLogo = () => (
 
 // --- Axios API Client-- -
 const apiClient = axios.create({
-    baseURL: 'https://mock-ai-interview-sb08.onrender.com', // live Render backend
+  baseURL: process.env.REACT_APP_API_URL, 
+  headers: { 'Content-Type': 'application/json' },
 });
 
 
