@@ -3,8 +3,15 @@ import axios from 'axios';
 
 // --- Excel Logo Component ---
 const ExcelLogo = () => (
-    <svg className="w-10 h-10 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25..." />
+    <svg
+        className="w-10 h-10 text-green-400"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+    >
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" />
     </svg>
 );
 
@@ -17,29 +24,28 @@ const apiClient = axios.create({
 // --- API Calls ---
 const startInterview = async () => {
     try {
-        const response = await axios.post(
-            "https://mock-ai-interview-sb08.onrender.com/start",
-            { candidate_name: "John Doe" } // <-- send JSON
-        );
-        setSessionId(response.data.session_id);
-        setChatHistory([{ sender: "ai", text: response.data.question.text }]);
-        setInterviewState("in_progress");
+        const response = await apiClient.post('/start', { candidate_name: 'John Doe' });
+        return response.data; // return data; do NOT call setState here
     } catch (err) {
-        console.error("Failed to start interview:", err);
-        setError("Failed to start the interview. Please try again.");
+        console.error('Failed to start interview:', err);
+        throw err;
     }
 };
 
-
 const submitAnswer = async (sessionId, questionIndex, answer) => {
-    const response = await apiClient.post('/answer', {
-        session_id: sessionId,
-        question_index: questionIndex,
-        answer,
-        evaluation_score: 4.0,
-        feedback: "Good answer" // dummy feedback for testing
-    });
-    return response.data;
+    try {
+        const response = await apiClient.post('/answer', {
+            session_id: sessionId,
+            question_index: questionIndex,
+            answer,
+            evaluation_score: 4.0,
+            feedback: 'Good answer', // dummy feedback for testing
+        });
+        return response.data;
+    } catch (err) {
+        console.error('Failed to submit answer:', err);
+        throw err;
+    }
 };
 
 // --- Chat Interface ---
@@ -62,17 +68,36 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
         <div className="flex flex-col h-[70vh] bg-slate-800 rounded-xl shadow-2xl p-4">
             <div className="flex-grow overflow-y-auto pr-4 space-y-6">
                 {chatHistory.map((msg, idx) => (
-                    <div key={idx} className={`flex items-start gap-4 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
-                        {msg.sender === 'ai' && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center font-bold text-slate-900">AI</div>}
-                        <div className={`max-w-xl p-4 rounded-xl whitespace-pre-wrap ${msg.sender === 'ai' ? 'bg-slate-700 text-slate-200 rounded-tl-none' : 'bg-blue-600 text-white rounded-br-none'}`}>
+                    <div
+                        key={idx}
+                        className={`flex items-start gap-4 ${msg.sender === 'user' ? 'justify-end' : ''}`}
+                    >
+                        {msg.sender === 'ai' && (
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center font-bold text-slate-900">
+                                AI
+                            </div>
+                        )}
+                        <div
+                            className={`max-w-xl p-4 rounded-xl whitespace-pre-wrap ${msg.sender === 'ai'
+                                ? 'bg-slate-700 text-slate-200 rounded-tl-none'
+                                : 'bg-blue-600 text-white rounded-br-none'
+                                }`}
+                        >
                             {msg.text}
                         </div>
-                        {msg.sender === 'user' && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold">You</div>}
+                        {msg.sender === 'user' && (
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold">
+                                You
+                            </div>
+                        )}
                     </div>
                 ))}
                 <div ref={chatEndRef} />
             </div>
-            <form onSubmit={handleSubmit} className="flex gap-4 mt-4 border-t border-slate-700 pt-4">
+            <form
+                onSubmit={handleSubmit}
+                className="flex gap-4 mt-4 border-t border-slate-700 pt-4"
+            >
                 <textarea
                     value={currentAnswer}
                     onChange={(e) => setCurrentAnswer(e.target.value)}
@@ -80,9 +105,15 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
                     disabled={isLoading}
                     rows={3}
                     className="flex-grow bg-slate-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:outline-none resize-none disabled:opacity-50"
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e); }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e);
+                    }}
                 />
-                <button type="submit" disabled={isLoading || !currentAnswer.trim()} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-transform transform hover:scale-105 disabled:bg-slate-600">
+                <button
+                    type="submit"
+                    disabled={isLoading || !currentAnswer.trim()}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-transform transform hover:scale-105 disabled:bg-slate-600"
+                >
                     {isLoading ? '...' : 'Send'}
                 </button>
             </form>
@@ -94,26 +125,50 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
 const SummaryReport = ({ summary, onRestart }) => {
     if (!summary) return null;
 
-    const getScoreColor = (score) => (score >= 4 ? 'text-green-400' : score >= 2.5 ? 'text-yellow-400' : 'text-red-400');
+    const getScoreColor = (score) =>
+        score >= 4 ? 'text-green-400' : score >= 2.5 ? 'text-yellow-400' : 'text-red-400';
 
     return (
         <div className="p-8 bg-slate-800 rounded-xl shadow-2xl">
-            <h2 className="text-3xl font-bold text-center mb-4 text-green-400">Interview Summary</h2>
-            <p className="text-center text-slate-400 mb-8">Here's your performance breakdown:</p>
+            <h2 className="text-3xl font-bold text-center mb-4 text-green-400">
+                Interview Summary
+            </h2>
+            <p className="text-center text-slate-400 mb-8">
+                Here's your performance breakdown:
+            </p>
             <div className="text-center mb-8">
                 <p className="text-slate-300 text-lg">Overall Score</p>
                 <p className={`text-7xl font-bold ${getScoreColor(summary.overall_score || 0)}`}>
-                    {summary.overall_score?.toFixed(1) || 'N/A'}<span className="text-4xl text-slate-400">/5</span>
+                    {summary.overall_score?.toFixed(1) || 'N/A'}
+                    <span className="text-4xl text-slate-400">/5</span>
                 </p>
             </div>
             <div className="grid md:grid-cols-2 gap-8 mb-8">
                 <div className="bg-slate-900/50 p-6 rounded-lg">
                     <h3 className="text-xl font-semibold mb-4 text-green-400">✅ Strengths</h3>
-                    {summary.strengths?.length ? <ul className="list-disc list-inside text-slate-300">{summary.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul> : <p className="text-slate-400">No specific strengths identified.</p>}
+                    {summary.strengths?.length ? (
+                        <ul className="list-disc list-inside text-slate-300">
+                            {summary.strengths.map((s, i) => (
+                                <li key={i}>{s}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-slate-400">No specific strengths identified.</p>
+                    )}
                 </div>
                 <div className="bg-slate-900/50 p-6 rounded-lg">
-                    <h3 className="text-xl font-semibold mb-4 text-yellow-400">🔍 Areas for Improvement</h3>
-                    {summary.areas_for_improvement?.length ? <ul className="list-disc list-inside text-slate-300">{summary.areas_for_improvement.map((a, i) => <li key={i}>{a}</li>)}</ul> : <p className="text-slate-400">No major areas for improvement noted.</p>}
+                    <h3 className="text-xl font-semibold mb-4 text-yellow-400">
+                        🔍 Areas for Improvement
+                    </h3>
+                    {summary.areas_for_improvement?.length ? (
+                        <ul className="list-disc list-inside text-slate-300">
+                            {summary.areas_for_improvement.map((a, i) => (
+                                <li key={i}>{a}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-slate-400">No major areas for improvement noted.</p>
+                    )}
                 </div>
             </div>
             <div className="bg-slate-900/50 p-6 rounded-lg mb-8">
@@ -121,7 +176,12 @@ const SummaryReport = ({ summary, onRestart }) => {
                 <p className="text-slate-300 whitespace-pre-wrap">{summary.detailed_feedback}</p>
             </div>
             <div className="text-center">
-                <button onClick={onRestart} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">Try Again</button>
+                <button
+                    onClick={onRestart}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105"
+                >
+                    Try Again
+                </button>
             </div>
         </div>
     );
@@ -150,11 +210,13 @@ export default function App() {
             setInterviewState('in_progress');
         } catch {
             setError('Failed to start the interview. Check backend.');
-        } finally { setIsLoading(false); }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleAnswerSubmit = async (answer) => {
-        setChatHistory(prev => [...prev, { sender: 'user', text: answer }]);
+        setChatHistory((prev) => [...prev, { sender: 'user', text: answer }]);
         setIsLoading(true);
         try {
             const data = await submitAnswer(sessionId, questionIndex, answer);
@@ -168,31 +230,51 @@ export default function App() {
                 setSummary(data.summary);
                 setInterviewState('completed');
             } else if (data.question) {
-                setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
-                setQuestionIndex(prev => prev + 1);
+                setChatHistory((prev) => [...prev, { sender: 'ai', text: data.question.text }]);
+                setQuestionIndex((prev) => prev + 1);
             }
         } catch {
             setError('Error submitting your answer.');
-        } finally { setIsLoading(false); }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const renderContent = () => {
-        if (error) return <div className="text-center p-6 bg-red-900/50 rounded-lg">{error}</div>;
+        if (error)
+            return <div className="text-center p-6 bg-red-900/50 rounded-lg">{error}</div>;
 
         switch (interviewState) {
             case 'not_started':
                 return (
                     <div className="text-center p-12 bg-slate-800 rounded-xl shadow-lg">
-                        <h2 className="text-3xl font-bold mb-4 text-slate-100">AI-Powered Excel Interview</h2>
-                        <p className="text-slate-400 mb-8">Test your Excel skills with AI. Click below to start.</p>
-                        <button onClick={handleStart} disabled={isLoading} className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg">{isLoading ? 'Initializing...' : 'Start Interview'}</button>
+                        <h2 className="text-3xl font-bold mb-4 text-slate-100">
+                            AI-Powered Excel Interview
+                        </h2>
+                        <p className="text-slate-400 mb-8">
+                            Test your Excel skills with AI. Click below to start.
+                        </p>
+                        <button
+                            onClick={handleStart}
+                            disabled={isLoading}
+                            className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg"
+                        >
+                            {isLoading ? 'Initializing...' : 'Start Interview'}
+                        </button>
                     </div>
                 );
             case 'in_progress':
-                return <ChatInterface chatHistory={chatHistory} onAnswerSubmit={handleAnswerSubmit} isLoading={isLoading} />;
+                return (
+                    <ChatInterface
+                        chatHistory={chatHistory}
+                        onAnswerSubmit={handleAnswerSubmit}
+                        isLoading={isLoading}
+                    />
+                );
             case 'completed':
                 return <SummaryReport summary={summary} onRestart={handleStart} />;
-            default: return null;
+            default:
+                return null;
         }
     };
 
@@ -206,7 +288,9 @@ export default function App() {
                 </header>
                 <main className="w-full">{renderContent()}</main>
             </div>
-            <footer className="w-full text-center py-4 text-sm text-slate-500">&copy; {new Date().getFullYear()} Mock Interview Platform</footer>
+            <footer className="w-full text-center py-4 text-sm text-slate-500">
+                &copy; {new Date().getFullYear()} Mock Interview Platform
+            </footer>
         </div>
     );
 }
