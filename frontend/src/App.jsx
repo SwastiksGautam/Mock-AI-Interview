@@ -162,17 +162,20 @@ function App() {
             setIsLoading(false);
         }
     };
-
     const handleAnswerSubmit = async (answer) => {
         setChatHistory(prev => [...prev, { sender: 'user', text: answer }]);
         setIsLoading(true);
         setError(null);
+
         try {
             const data = await submitAnswer(sessionId, answer);
+
             if (data.summary) {
+                // If the interview is over, show the summary
                 setSummary(data.summary);
                 setInterviewState('completed');
             } else if (data.question) {
+                // Automatically display the next question from AI
                 setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
             }
         } catch (err) {
@@ -181,6 +184,7 @@ function App() {
             setIsLoading(false);
         }
     };
+
 
     const renderContent = () => {
         if (error) {
