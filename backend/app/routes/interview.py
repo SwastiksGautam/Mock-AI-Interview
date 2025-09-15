@@ -1,174 +1,199 @@
-
-
-
-# app/services/evaluator.py
-import os
-import json
-import uuid
-import io
-import openai
+# app/routes/interview.py
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
-from fastapi import UploadFile, HTTPException
+import uuid
+import json
+from datetime import datetime
 
+# Corrected import of services
+from app.services.evaluator import (
+    generate_excel_question, 
+    evaluate_answer, 
+    generate_transition, 
+    generate_summary_feedback, 
+    transcribe_audio
+)
 
-# Load the OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+router = APIRouter()
 
-# -------------------------------
-# Data Models
-# -------------------------------
-class QuestionGenerationOutput(BaseModel):
-    id: str
-    question_text: str
-    ideal_answer: str
+# In-memory store for interview sessions.
+# Note: This is not production-ready for multi-instance deployments.
+active_sessions = {}
+SESSIONS_FILE = "sessions.json"
 
-# -------------------------------
-# Excel Question Generation
-# -------------------------------
-def generate_excel_question(stage: int, topic: str = "general") -> QuestionGenerationOutput:
-    system_prompt = f"""
-    You are an expert Data Analyst and a technical interviewer for an advanced Excel position.
-    Your task is to generate a difficult and relevant Excel interview question for an advanced user.
-    The question should be practical and test core Excel skills.
-    For stage 1, the questions should be more foundational. For stage 2, they should be more complex.
+# Helper function to save sessions to disk
+def save_sessions():
+    with open(SESSIONS_FILE, "w") as f:
+        json.dump(active_sessions, f, indent=2, default=str)
+
+def generate_summary(session):
+    history = session['history']
+    if not history:
+        return {"overall_score": 0, "strengths": [], "areas_for_improvement": [], "detailed_feedback": "No questions were answered."}
+
+    summary_feedback = generate_summary_feedback(history)
     
-    The output MUST be a single, valid JSON object with the following keys:
-    - "question_text": The Excel interview question.
-    - "ideal_answer": A detailed, expert-level answer that explains the solution, including relevant functions or methods.
+    total_score = sum(h['evaluation']['average_score'] for h in history)
+    overall_score = round(total_score / len(history), 2)
     
-    Example output:
-    {{"question_text": "How can you use the VLOOKUP function to return a value from a different worksheet, and what are its limitations?", "ideal_answer": "VLOOKUP can be used by referencing the other sheet... its main limitation is that it can only look up values to the right..."}}
-    """
-    user_prompt = f"Generate an Excel interview question for Stage {stage}. The topic is {topic}."
+    detailed_feedback = "Performance Summary:\n"
+    for item in history:
+        detailed_feedback += f"- Q: {item['question_text']}\n  - Score: {item['evaluation']['average_score']}/5\n  - Feedback: {item['evaluation']['feedback']}\n"
+        
+    return {
+        "overall_score": overall_score,
+        "strengths": summary_feedback.get('strengths', []),
+        "areas_for_improvement": summary_feedback.get('areas_for_improvement', []),
+        "detailed_feedback": detailed_feedback
+    }
+
+# ------------------- Routes -------------------
+@router.post("/start")
+def start_interview():
+    session_id = str(uuid.uuid4())
     
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            response_format={"type": "json_object"}
+    # Dynamically generate the first question
+    first_question = generate_excel_question(stage=1)
+    
+    # Store the entire question object, including the ideal answer, in the session state
+    active_sessions[session_id] = {
+        "stage": 1,
+        "questions_asked": [first_question.dict()], # Store as a list
+        "history": []
+    }
+    save_sessions()
+
+    return {
+        "session_id": session_id,
+        "question": {
+            "id": first_question.id,
+            "text": f"Welcome! I'm your AI interviewer. Let's start with some quick questions. First up: {first_question.question_text}"
+        }
+    }
+
+@router.post("/answer")
+def submit_answer(session_id: str = Form(None), answer: str = Form(None), audio_file: UploadFile = File(None)):
+    if session_id not in active_sessions:
+        raise HTTPException(status_code=404, detail="Interview session not found.")
+
+    transcribed_text = None
+    if audio_file:
+        # Voice mode logic
+        try:
+            transcribed_text = transcribe_audio(audio_file)
+            
+            # If transcribe_audio returns a specific error message, handle it
+            if transcribed_text == "Voice not recorded":
+                return {
+                    "session_id": session_id,
+                    "previous_answer_feedback": "Voice not recorded.",
+                    "question": {"text": "I couldn't hear you. Please try again."}
+                }
+        
+        except HTTPException as e:
+            # Catch the specific error from evaluator.py and return a friendly message
+            if "Transcription failed" in e.detail:
+                return {
+                    "session_id": session_id,
+                    "previous_answer_feedback": "Transcription failed. Please check your audio format.",
+                    "question": {"text": "I couldn't hear you. Please try again."}
+                }
+            # Re-raise other HTTP exceptions
+            raise e
+        
+        except Exception as e:
+            # Catch any other unexpected errors and raise a 500
+            raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
+    else:
+        # Written mode logic
+        transcribed_text = answer
+        
+    # Now, process the transcribed_text just like a regular answer
+    session = active_sessions[session_id]
+    
+    # Check for "I don't know" or similar answers
+    if any(keyword in transcribed_text.lower() for keyword in ["i don't know", "i am not sure", "pass", "no idea"]):
+        current_question_data = session["questions_asked"][-1]
+        session["history"].append({
+            "question_id": current_question_data['id'],
+            "question_text": current_question_data['question_text'],
+            "answer": transcribed_text,
+            "evaluation": {"average_score": 1.0, "feedback": "Answer was not provided.", "is_sufficient": False}
+        })
+        
+        current_stage = session["stage"]
+        next_stage_threshold = 5
+        
+        if len(session["questions_asked"]) >= next_stage_threshold:
+            return {"session_id": session_id, "summary": generate_summary(session)}
+
+        next_question = generate_excel_question(stage=current_stage)
+        session["questions_asked"].append(next_question.dict())
+        
+        transition_text = generate_transition(
+            feedback="That's okay. Let's try another one.",
+            next_question=next_question.question_text
         )
-        generated_content = json.loads(response.choices[0].message.content)
-        generated_content['id'] = str(uuid.uuid4())
-        return QuestionGenerationOutput(**generated_content)
-    except Exception as e:
-        print(f"AI Question Generation Error: {e}")
-        return QuestionGenerationOutput(
-            id=str(uuid.uuid4()),
-            question_text="What is the difference between INDEX-MATCH and VLOOKUP?",
-            ideal_answer="INDEX-MATCH is more flexible than VLOOKUP..."
-        )
+        
+        return {
+            "session_id": session_id,
+            "question": {"id": next_question.id, "text": transition_text},
+            "previous_answer_feedback": transcribed_text
+        }
+    
+    # Get the details of the question the user just answered
+    current_question_data = session["questions_asked"][-1]
+    
+    # Evaluate the answer using the ideal answer we stored earlier
+    evaluation = evaluate_answer(
+        question_text=current_question_data['question_text'],
+        candidate_answer=transcribed_text,
+        ideal_answer=current_question_data['ideal_answer']
+    )
+    
+    # Store history
+    session["history"].append({
+        "question_id": current_question_data['id'],
+        "question_text": current_question_data['question_text'],
+        "answer": transcribed_text,
+        "evaluation": evaluation
+    })
 
-# -------------------------------
-# Evaluate Candidate Answer
-# -------------------------------
-def evaluate_answer(question_text: str, candidate_answer: str, ideal_answer: str):
-    system_prompt = "You are an expert Data Analyst and a strict but fair technical interviewer for an advanced Excel position."
-    user_prompt = f"""
-    Here is the evaluation context:
+    # Decide if the interview is over or if we need to generate a new question
+    current_stage = session["stage"]
+    next_stage_threshold = 5 # Now we ask 5 questions per stage
+    
+    if len(session["questions_asked"]) >= next_stage_threshold:
+        if current_stage == 1:
+            total_score = sum(h['evaluation']['average_score'] for h in session['history'][-next_stage_threshold:])
+            avg_score = total_score / next_stage_threshold
+            
+            if avg_score >= 3.0:
+                session["stage"] = 2
+                next_question = generate_excel_question(stage=2)
+                session["questions_asked"].append(next_question.dict())
+                
+                transition_text = generate_transition(
+                    feedback="Great job on those warm-up questions.",
+                    next_question=next_question.question_text
+                )
+                return {"session_id": session_id, "question": {"id": next_question.id, "text": transition_text}}
+            else:
+                return {"session_id": session_id, "summary": generate_summary(session)}
+        else: # Stage 2 complete
+            return {"session_id": session_id, "summary": generate_summary(session)}
 
-    1.  **THE QUESTION ASKED:**
-        "{question_text}"
-
-    2.  **THE CANDIDATE'S ANSWER:**
-        "{candidate_answer}"
-
-    3.  **THE IDEAL, EXPERT-LEVEL ANSWER (for your reference):**
-        "{ideal_answer}"
-
-    **EVALUATION INSTRUCTIONS:**
-    Based on the context above, evaluate the candidate's answer using the following rubric:
-    - Correctness (1-5)
-    - Completeness (1-5)
-    - Best Practices (1-5)
-    - Clarity (1-5)
-
-    Calculate an average score. Provide concise feedback.
-
-    OUTPUT FORMAT: Single JSON with keys: "average_score", "feedback", "is_sufficient".
-    """
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
-        evaluation = json.loads(response.choices[0].message.content)
-        return evaluation
-    except Exception as e:
-        print(f"AI Evaluation Error: {e}")
-        return {"average_score": 2.5, "feedback": "There was an error processing the evaluation.", "is_sufficient": False}
-
-# -------------------------------
-# Transition to Next Question
-# -------------------------------
-def generate_transition(feedback: str, next_question: str) -> str:
-    prompt = f"""
-    You are an AI interviewer. Candidate feedback: "{feedback}"
-    Next question: "{next_question}"
-    Generate a short transition connecting the feedback to the next question.
-    """
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.5
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"AI Transition Error: {e}")
-        return next_question
-
-# -------------------------------
-# Audio Transcription with Whisper
-# -------------------------------
-def transcribe_audio(audio_file: UploadFile) -> str:
-    """
-    Transcribes an audio file to text using OpenAI's Whisper model.
-    Streams the file content directly to the API without conversion.
-    """
-    try:
-        if audio_file.file is None:
-            raise HTTPException(status_code=400, detail="Audio file is empty.")
-
-        response = openai.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file.file
-        )
-        return response.text
-    except Exception as e:
-        print(f"Whisper Transcription Error: {e}")
-        raise HTTPException(status_code=500, detail="Transcription failed. Please check your audio format.")
-
-# -------------------------------
-# Summary Feedback
-# -------------------------------
-def generate_summary_feedback(history: list):
-    history_text = "\n\n".join([
-        f"Question: {item['question_text']}\nAnswer: {item['answer']}\nFeedback: {item['evaluation']['feedback']}\nScore: {item['evaluation']['average_score']}"
-        for item in history
-    ])
-    user_prompt = f"""
-    You are an AI interviewer providing a final summary. Based on interview history, generate key strengths and areas for improvement.
-    Interview History:
-    {history_text}
-    Provide output as JSON with keys: "strengths", "areas_for_improvement".
-    """
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a professional technical interviewer."},
-                {"role": "user", "content": user_prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
-        return json.loads(response.choices[0].message.content)
-    except Exception as e:
-        print(f"AI Summary Generation Error: {e}")
-        return {"strengths": ["Basic understanding of Excel formulas"], "areas_for_improvement": ["Need to improve on advanced features"]}
+    # If not complete, generate a new question
+    next_question = generate_excel_question(stage=current_stage)
+    session["questions_asked"].append(next_question.dict())
+    
+    transition_text = generate_transition(
+        feedback=evaluation['feedback'],
+        next_question=next_question.question_text
+    )
+    
+    return {
+        "session_id": session_id,
+        "question": {"id": next_question.id, "text": transition_text},
+        "previous_answer_feedback": transcribed_text
+    }
