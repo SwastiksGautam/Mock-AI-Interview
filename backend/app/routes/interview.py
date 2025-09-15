@@ -8,7 +8,7 @@ from app.services.evaluator import evaluate_answer, generate_transition
 router = APIRouter()
 sessions = {}
 
-MAX_QUESTIONS_PER_SESSION = 5  # Ask exactly 5 questions per interview session
+MAX_QUESTIONS_PER_SESSION = 5  # Fixed number of questions per interview
 
 class AnswerRequest(BaseModel):
     session_id: str
@@ -20,8 +20,8 @@ def start_interview():
 
     # Initialize session state
     sessions[session_id] = {
-        "current_index": 0,  # Start at first question (index 0)
-        "answers": []        # Store candidate's answers and evaluations
+        "current_index": 0,  # Start at first question
+        "answers": []
     }
 
     first_question = {
@@ -57,31 +57,33 @@ def submit_answer(payload: AnswerRequest):
         ideal_answer=ideal_answer
     )
 
-    # Save the answer and evaluation
+    # Store answer and evaluation
     session["answers"].append({
         "question": current_question["question_text"],
         "candidate_answer": candidate_answer,
         "evaluation": evaluation
     })
 
+    # Increment index AFTER storing current data
     session["current_index"] += 1
 
-    # Check if we reached the max questions per session
+    # Check if we've reached the max questions per session
     if session["current_index"] >= MAX_QUESTIONS_PER_SESSION or session["current_index"] >= len(mock_questions):
-        # Return summary after 5 questions or when questions run out
-        avg_score = sum(ans["evaluation"]["average_score"] for ans in session["answers"]) / len(session["answers"])
+        # Return summary after 5 questions or no more questions available
+        total_answers = session["answers"]
+        avg_score = sum(ans["evaluation"]["average_score"] for ans in total_answers) / len(total_answers)
 
         return {
             "summary": {
-                "total_questions": len(session["answers"]),
+                "total_questions": len(total_answers),
                 "average_score": round(avg_score, 2),
                 "strengths": ["Good understanding of Excel concepts"],
-                "areas_for_improvement": ["Provide more examples where applicable"],
-                "detailed_feedbacks": [ans["evaluation"]["feedback"] for ans in session["answers"]]
+                "areas_for_improvement": ["Provide more detailed examples"],
+                "detailed_feedbacks": [ans["evaluation"]["feedback"] for ans in total_answers]
             }
         }
 
-    # Otherwise, return next question
+    # Otherwise, send next question
     next_question_text = mock_questions[session["current_index"]]["question_text"]
 
     transition = generate_transition(
