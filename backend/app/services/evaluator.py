@@ -7,6 +7,7 @@ import openai
 from pydantic import BaseModel
 from fastapi import UploadFile, HTTPException
 
+# Note: No 'from pydub import AudioSegment' import
 
 # Load the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -169,3 +170,16 @@ def generate_summary_feedback(history: list):
     except Exception as e:
         print(f"AI Summary Generation Error: {e}")
         return {"strengths": ["Basic understanding of Excel formulas"], "areas_for_improvement": ["Need to improve on advanced features"]}
+
+
+
+
+
+
+
+
+
+
+
+
+
