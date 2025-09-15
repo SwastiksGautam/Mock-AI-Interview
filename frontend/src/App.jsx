@@ -3,7 +3,6 @@ import axios from 'axios';
 
 // --- Helper Components & API Logic ---
 
-// A simple SVG logo component for visual flair
 const ExcelLogo = () => (
     <svg className="w-10 h-10 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125v-1.5c0-.621.504-1.125 1.125-1.125m17.25 0h.008v.008h-.008v-.008zm-17.25 0h.008v.008h-.008v-.008zM12 21.75h.008v.008h-.008v-.008zM12 18h.008v.008h-.008v-.008zM12 14.25h.008v.008h-.008v-.008zM12 10.5h.008v.008h-.008v-.008zM12 6.75h.008v.008h-.008v-.008zM9.75 21.75h.008v.008h-.008v-.008zM9.75 18h.008v.008h-.008v-.008zM9.75 14.25h.008v.008h-.008v-.008zM9.75 10.5h.008v.008h-.008v-.008zM9.75 6.75h.008v.008h-.008v-.008zM7.5 21.75h.008v.008h-.008v-.008zM7.5 18h.008v.008h-.008v-.008zM7.5 14.25h.008v.008h-.008v-.008zM7.5 10.5h.008v.008h-.008v-.008zM7.5 6.75h.008v.008h-.008v-.008zm-3.375 0h.008v.008h-.008v-.008zM14.25 21.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm2.25 15h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm2.25 15h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zm0-3.75h.008v.008h-.008v-.008zM3.375 9.75h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125v-1.5c0-.621.504-1.125 1.125-1.125m17.25 0h.008v.008h-.008v-.008zm-17.25 0h.008v.008h-.008v-.008z" />
@@ -25,6 +24,7 @@ const submitAnswer = async (sessionId, answer) => {
     return response.data;
 };
 
+// --- Chat Interface Component ---
 const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
     const [currentAnswer, setCurrentAnswer] = useState('');
     const chatEndRef = useRef(null);
@@ -76,6 +76,7 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
     );
 };
 
+// --- Summary Report Component ---
 const SummaryReport = ({ summary, onRestart }) => {
     if (!summary) {
         return (
@@ -96,17 +97,47 @@ const SummaryReport = ({ summary, onRestart }) => {
         <div className="p-8 bg-slate-800 rounded-xl shadow-2xl animate-fade-in">
             <h2 className="text-3xl font-bold text-center mb-2 text-green-400">Interview Performance Report</h2>
             <p className="text-center text-slate-400 mb-8">Here's a detailed breakdown of your performance.</p>
-            <div className="text-center mb-8"><p className="text-slate-300 text-lg">Overall Score</p><p className={`text-7xl font-bold ${getScoreColor(summary.overall_score)}`}>{summary.overall_score.toFixed(1)}<span className="text-4xl text-slate-400">/5</span></p></div>
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-                <div className="bg-slate-900/50 p-6 rounded-lg"><h3 className="text-xl font-semibold mb-4 text-green-400">✅ Strengths</h3>{summary.strengths?.length > 0 ? <ul className="list-disc list-inside space-y-2 text-slate-300">{summary.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul> : <p className="text-slate-400">No specific strengths identified.</p>}</div>
-                <div className="bg-slate-900/50 p-6 rounded-lg"><h3 className="text-xl font-semibold mb-4 text-yellow-400">🔍 Areas for Improvement</h3>{summary.areas_for_improvement?.length > 0 ? <ul className="list-disc list-inside space-y-2 text-slate-300">{summary.areas_for_improvement.map((a, i) => <li key={i}>{a}</li>)}</ul> : <p className="text-slate-400">No major areas for improvement noted.</p>}</div>
+            <div className="text-center mb-8">
+                <p className="text-slate-300 text-lg">Overall Score</p>
+                <p className={`text-7xl font-bold ${getScoreColor(summary?.overall_score || 0)}`}>
+                    {summary?.overall_score !== undefined ? summary.overall_score.toFixed(1) : 'N/A'}
+                    <span className="text-4xl text-slate-400">/5</span>
+                </p>
             </div>
-            <div className="bg-slate-900/50 p-6 rounded-lg"><h3 className="text-xl font-semibold mb-4 text-slate-200">Detailed Feedback</h3><p className="text-slate-300 whitespace-pre-wrap leading-relaxed">{summary.detailed_feedback}</p></div>
-            <div className="text-center mt-8"><button onClick={onRestart} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">Try Again</button></div>
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+                <div className="bg-slate-900/50 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold mb-4 text-green-400">✅ Strengths</h3>
+                    {summary.strengths?.length > 0
+                        ? <ul className="list-disc list-inside space-y-2 text-slate-300">
+                            {summary.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                        </ul>
+                        : <p className="text-slate-400">No specific strengths identified.</p>
+                    }
+                </div>
+                <div className="bg-slate-900/50 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold mb-4 text-yellow-400">🔍 Areas for Improvement</h3>
+                    {summary.areas_for_improvement?.length > 0
+                        ? <ul className="list-disc list-inside space-y-2 text-slate-300">
+                            {summary.areas_for_improvement.map((a, i) => <li key={i}>{a}</li>)}
+                        </ul>
+                        : <p className="text-slate-400">No major areas for improvement noted.</p>
+                    }
+                </div>
+            </div>
+            <div className="bg-slate-900/50 p-6 rounded-lg">
+                <h3 className="text-xl font-semibold mb-4 text-slate-200">Detailed Feedback</h3>
+                <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">{summary.detailed_feedback}</p>
+            </div>
+            <div className="text-center mt-8">
+                <button onClick={onRestart} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">
+                    Try Again
+                </button>
+            </div>
         </div>
     );
 };
 
+// --- Main App Component ---
 function App() {
     const [interviewState, setInterviewState] = useState('not_started');
     const [sessionId, setSessionId] = useState(null);
@@ -161,7 +192,9 @@ function App() {
                     <div className="text-center p-12 bg-slate-800 rounded-xl shadow-lg animate-fade-in">
                         <h2 className="text-3xl font-bold mb-4 text-slate-100">AI-Powered Excel Interview</h2>
                         <p className="text-slate-400 mb-8 max-w-prose mx-auto">Test your technical Excel skills with our automated AI interviewer. You'll face a mix of quick-fire and scenario-based questions to assess your proficiency. Click below when you're ready to begin.</p>
-                        <button onClick={handleStartInterview} disabled={isLoading} className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">{isLoading ? 'Initializing...' : 'Start Interview'}</button>
+                        <button onClick={handleStartInterview} disabled={isLoading} className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">
+                            {isLoading ? 'Initializing...' : 'Start Interview'}
+                        </button>
                     </div>
                 );
             case 'in_progress':
