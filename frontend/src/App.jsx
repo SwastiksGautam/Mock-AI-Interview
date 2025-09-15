@@ -22,9 +22,9 @@ const ExcelLogo = () => (
 // });
 
 const apiClient = axios.create({
-    baseURL: 'http://34.82.242.193:8000', // Public backend URL
-    headers: { 'Content-Type': 'application/json' },
+    baseURL: 'https://mock-ai-interview-sb08.onrender.com', // ✅ Render public URL
 });
+
 
 
 // --- API Calls ---
