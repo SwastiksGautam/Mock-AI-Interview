@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+import uuid
 
 router = APIRouter()
 
@@ -8,5 +9,11 @@ def get_interview_question():
 
 @router.post("/start")
 def start_interview():
-    # Example simple response
-    return {"message": "Interview started successfully"}
+    session_id = str(uuid.uuid4())
+    first_question = {
+        "text": "What is a circular import?"
+    }
+    return {
+        "session_id": session_id,
+        "question": first_question
+    }
