@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 # Corrected import of services
-from app.services.evaluator import generate_excel_question, evaluate_answer, generate_transition
+from app.services.evaluator import generate_excel_question, evaluate_answer, generate_transition, generate_summary_feedback
 
 router = APIRouter()
 
@@ -55,6 +55,38 @@ def submit_answer(request: AnswerRequest):
         raise HTTPException(status_code=404, detail="Interview session not found.")
 
     session = active_sessions[session_id]
+    
+    # Check for "I don't know" or similar answers
+    if any(keyword in request.answer.lower() for keyword in ["i don't know", "i am not sure", "pass", "no idea"]):
+        # Add a record to history for this skipped question
+        current_question_data = session["questions_asked"][-1]
+        session["history"].append({
+            "question_id": current_question_data['id'],
+            "question_text": current_question_data['question_text'],
+            "answer": request.answer,
+            "evaluation": {"average_score": 1.0, "feedback": "Answer was not provided.", "is_sufficient": False}
+        })
+        
+        # Move to the next question
+        current_stage = session["stage"]
+        next_stage_threshold = 3
+        
+        if len(session["questions_asked"]) >= next_stage_threshold:
+            return {"session_id": session_id, "summary": generate_summary(session)}
+
+        next_question = generate_excel_question(stage=current_stage)
+        session["questions_asked"].append(next_question.dict())
+        
+        transition_text = generate_transition(
+            feedback="That's okay. Let's try another one.",
+            next_question=next_question.question_text
+        )
+        
+        return {
+            "session_id": session_id,
+            "question": {"id": next_question.id, "text": transition_text},
+            "previous_answer_feedback": "Answer was not provided."
+        }
     
     # Get the details of the question the user just answered
     current_question_data = session["questions_asked"][-1]
@@ -119,19 +151,19 @@ def generate_summary(session):
     if not history:
         return {"overall_score": 0, "strengths": [], "areas_for_improvement": [], "detailed_feedback": "No questions were answered."}
 
+    # Use the LLM to generate keywords for strengths and areas for improvement
+    summary_feedback = generate_summary_feedback(history)
+    
     total_score = sum(h['evaluation']['average_score'] for h in history)
     overall_score = round(total_score / len(history), 2)
     
-    strengths = [h['question_text'] for h in history if h['evaluation']['average_score'] >= 4.0]
-    areas_for_improvement = [h['question_text'] for h in history if h['evaluation']['average_score'] < 3.0]
-    
     detailed_feedback = "Performance Summary:\n"
     for item in history:
-        detailed_feedback += f"- Q: {item['question_text']}\n  - Score: {item['evaluation']['average_score']}/5\n  - Feedback: {item['evaluation']['feedback']}\n"
+        detailed_feedback += f"- Q: {item['question_text']}\n  - Score: {item['evaluation']['average_score']}/5\n  - Feedback: {item['evaluation']['feedback']}\n"
         
     return {
         "overall_score": overall_score,
-        "strengths": strengths,
-        "areas_for_improvement": areas_for_improvement,
+        "strengths": summary_feedback.get('strengths', []),
+        "areas_for_improvement": summary_feedback.get('areas_for_improvement', []),
         "detailed_feedback": detailed_feedback
     }

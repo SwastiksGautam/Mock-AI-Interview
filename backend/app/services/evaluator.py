@@ -3,8 +3,9 @@ import os
 import json
 import openai
 from pydantic import BaseModel
-import uuid # <-- Add this line
+import uuid
 
+# Load the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class QuestionGenerationOutput(BaseModel):
@@ -143,3 +144,44 @@ def generate_transition(feedback: str, next_question: str) -> str:
     except Exception as e:
         print(f"AI Transition Error: {e}")
         return next_question # Fallback to just the question
+
+def generate_summary_feedback(history: list):
+    """
+    Provide your response as a single, valid JSON object with two keys: "strengths" and "areas_for_improvement".
+    Each key should be a list of **short, bullet-point strings**. The strings should be **high-level summaries, not the full question text**.
+    """
+    history_text = "\n\n".join([
+        f"Question: {item['question_text']}\nAnswer: {item['answer']}\nFeedback: {item['evaluation']['feedback']}\nScore: {item['evaluation']['average_score']}"
+        for item in history
+    ])
+
+    user_prompt = f"""
+    You are an AI interviewer providing a final summary. Based on the following interview history,
+    generate a list of a candidate's key strengths and areas for improvement.
+
+    Interview History:
+    {history_text}
+
+    Provide your response as a single, valid JSON object with two keys: "strengths" and "areas_for_improvement".
+    Each key should be a list of short, bullet-point strings. The strings should be high-level summaries, not the full question text.
+    
+    Example:
+    {{
+        "strengths": ["Understanding of conditional formulas", "Ability to use advanced lookup functions"],
+        "areas_for_improvement": ["Lack of detail in formula explanations", "Incomplete knowledge of modern functions"]
+    }}
+    """
+    
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[
+                {"role": "system", "content": "You are a professional technical interviewer."},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print(f"AI Summary Generation Error: {e}")
+        return {"strengths": ["Basic understanding of Excel formulas"], "areas_for_improvement": ["Need to improve on advanced features"]}
