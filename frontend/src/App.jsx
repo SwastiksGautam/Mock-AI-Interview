@@ -169,13 +169,12 @@ function App() {
 
         try {
             const data = await submitAnswer(sessionId, answer);
+            console.log('API response:', data); // 🔍 Log the full API response
 
             if (data.summary) {
-                // If the interview is over, show the summary
                 setSummary(data.summary);
                 setInterviewState('completed');
             } else if (data.question) {
-                // Automatically display the next question from AI
                 setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
             }
         } catch (err) {
@@ -184,6 +183,7 @@ function App() {
             setIsLoading(false);
         }
     };
+
 
 
     const renderContent = () => {
