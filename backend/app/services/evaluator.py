@@ -6,7 +6,7 @@ import io
 import openai
 from pydantic import BaseModel
 from fastapi import UploadFile, HTTPException
-
+from pydub import AudioSegment
 
 
 # Load the OpenAI API key
@@ -125,24 +125,38 @@ def generate_transition(feedback: str, next_question: str) -> str:
 # -------------------------------
 # Audio Transcription with Whisper
 # -------------------------------
-
 def transcribe_audio(audio_file: UploadFile) -> str:
     """
     Transcribes an audio file to text using OpenAI's Whisper model.
-    Streams the file content directly to the API without conversion.
+    Reads the file into memory and passes it explicitly.
     """
     try:
-        if audio_file.file is None:
-            raise HTTPException(status_code=400, detail="Audio file is empty.")
-
+        # Read the file content into a bytes object in memory
+        file_content = audio_file.file.read()
+        
+        # Check if the file is empty
+        if not file_content:
+            return "Voice not recorded"
+        
+        # Use pydub to load the file from disk and process it
+        audio = AudioSegment.from_file(io.BytesIO(file_content), format="webm")
+        wav_io = io.BytesIO()
+        audio.export(wav_io, format="wav")
+        wav_io.seek(0)
+        
+        # Send the new WAV file content to the OpenAI API
         response = openai.audio.transcriptions.create(
             model="whisper-1",
-            file=audio_file.file
+            file=(audio_file.filename.replace('.webm', '.wav'), wav_io.read(), "audio/wav")
         )
+        
         return response.text
+    
     except Exception as e:
         print(f"Whisper Transcription Error: {e}")
         raise HTTPException(status_code=500, detail="Transcription failed. Please check your audio format.")
+
+
 # -------------------------------
 # Summary Feedback
 # -------------------------------
