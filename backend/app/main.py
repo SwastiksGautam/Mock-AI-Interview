@@ -14,6 +14,7 @@ app = FastAPI()
 origins = [
     "https://mock-ai-interview-psi.vercel.app",
     "http://localhost:3000",
+    "http://127.0.0.1:3000", # Added to resolve CORS issue
 ]
 
 app.add_middleware(

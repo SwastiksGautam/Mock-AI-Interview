@@ -1,22 +1,29 @@
 # app/services/evaluator.py
 import os
 import json
+import uuid
+import io
 import openai
 from pydantic import BaseModel
-import uuid
+from fastapi import UploadFile, HTTPException
+from pydub import AudioSegment
+
 
 # Load the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# -------------------------------
+# Data Models
+# -------------------------------
 class QuestionGenerationOutput(BaseModel):
     id: str
     question_text: str
     ideal_answer: str
 
+# -------------------------------
+# Excel Question Generation
+# -------------------------------
 def generate_excel_question(stage: int, topic: str = "general") -> QuestionGenerationOutput:
-    """
-    Generates a new Excel interview question and an ideal answer using an LLM.
-    """
     system_prompt = f"""
     You are an expert Data Analyst and a technical interviewer for an advanced Excel position.
     Your task is to generate a difficult and relevant Excel interview question for an advanced user.
@@ -30,42 +37,33 @@ def generate_excel_question(stage: int, topic: str = "general") -> QuestionGener
     Example output:
     {{"question_text": "How can you use the VLOOKUP function to return a value from a different worksheet, and what are its limitations?", "ideal_answer": "VLOOKUP can be used by referencing the other sheet... its main limitation is that it can only look up values to the right..."}}
     """
-    user_prompt = f"""
-    Generate an Excel interview question for Stage {stage}. The topic is {topic}.
-    """
+    user_prompt = f"Generate an Excel interview question for Stage {stage}. The topic is {topic}."
     
     try:
         response = openai.chat.completions.create(
-            model="gpt-4-turbo", 
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             response_format={"type": "json_object"}
         )
-        
-        # Parse the JSON response
         generated_content = json.loads(response.choices[0].message.content)
-        
-        # Add a unique ID to the generated question for state management
         generated_content['id'] = str(uuid.uuid4())
-        
         return QuestionGenerationOutput(**generated_content)
-
     except Exception as e:
         print(f"AI Question Generation Error: {e}")
-        return QuestionGenerationOutput(id=str(uuid.uuid4()), question_text="What is the difference between INDEX-MATCH and VLOOKUP?", ideal_answer="INDEX-MATCH is more flexible than VLOOKUP...")
+        return QuestionGenerationOutput(
+            id=str(uuid.uuid4()),
+            question_text="What is the difference between INDEX-MATCH and VLOOKUP?",
+            ideal_answer="INDEX-MATCH is more flexible than VLOOKUP..."
+        )
 
+# -------------------------------
+# Evaluate Candidate Answer
+# -------------------------------
 def evaluate_answer(question_text: str, candidate_answer: str, ideal_answer: str):
-    """
-    Evaluates a candidate's answer using a detailed prompt and a rubric,
-    forcing a JSON output.
-    """
-    system_prompt = """
-    You are an expert Data Analyst and a strict but fair technical interviewer for an advanced Excel position.
-    Your task is to evaluate a candidate's answer to a technical question.
-    """
-
+    system_prompt = "You are an expert Data Analyst and a strict but fair technical interviewer for an advanced Excel position."
     user_prompt = f"""
     Here is the evaluation context:
 
@@ -79,102 +77,111 @@ def evaluate_answer(question_text: str, candidate_answer: str, ideal_answer: str
         "{ideal_answer}"
 
     **EVALUATION INSTRUCTIONS:**
-    Based on the context above, evaluate the candidate's answer using the following rubric.
-    - **Correctness (1-5):** Is the answer factually correct?
-    - **Completeness (1-5):** Did it cover all key aspects from the ideal answer?
-    - **Best Practices (1-5):** Did they mention modern, efficient methods?
-    - **Clarity (1-5):** Was the explanation clear and well-structured?
+    Based on the context above, evaluate the candidate's answer using the following rubric:
+    - Correctness (1-5)
+    - Completeness (1-5)
+    - Best Practices (1-5)
+    - Clarity (1-5)
 
-    Calculate an average score from your rubric ratings. Provide concise, constructive feedback.
+    Calculate an average score. Provide concise feedback.
 
-    **OUTPUT FORMAT:**
-    Your entire response MUST be a single, valid JSON object. Do not include any text before or after the JSON.
-    The JSON object must have these exact keys: "average_score", "feedback", "is_sufficient".
-    - "average_score" should be a float between 1.0 and 5.0.
-    - "feedback" should be a string containing one paragraph of feedback.
-    - "is_sufficient" should be a boolean (true if average_score is 3.5 or higher, otherwise false).
-
-    Example output:
-    {{"average_score": 4.5, "feedback": "Excellent explanation. You correctly identified the key components and provided a clear example. To improve, you could also mention its limitations.", "is_sufficient": true}}
+    OUTPUT FORMAT: Single JSON with keys: "average_score", "feedback", "is_sufficient".
     """
-    
     try:
         response = openai.chat.completions.create(
-            model="gpt-4-turbo", # Use a model that supports JSON mode
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             response_format={"type": "json_object"}
         )
-        
-        # The response is guaranteed to be a valid JSON string
         evaluation = json.loads(response.choices[0].message.content)
         return evaluation
-
     except Exception as e:
         print(f"AI Evaluation Error: {e}")
-        # Return a fallback JSON object in case of an error
         return {"average_score": 2.5, "feedback": "There was an error processing the evaluation.", "is_sufficient": False}
 
+# -------------------------------
+# Transition to Next Question
+# -------------------------------
 def generate_transition(feedback: str, next_question: str) -> str:
-    """
-    Generates a natural-sounding transition to the next question.
-    """
     prompt = f"""
-    You are an AI interviewer. Your goal is to make the conversation flow naturally.
-    The candidate just answered a question and their feedback was: "{feedback}"
-    The next question you need to ask is: "{next_question}"
-
-    Your task is to generate a short, one-sentence transition that connects the feedback to the next question.
-    Examples:
-    - "Okay, that makes sense. Let's switch gears a bit. How would you..."
-    - "Good explanation. Building on that, can you tell me..."
-    - "I see. Let's move on to our next scenario. Imagine you have..."
-
-    Your response should ONLY be the transition and the next question.
+    You are an AI interviewer. Candidate feedback: "{feedback}"
+    Next question: "{next_question}"
+    Generate a short transition connecting the feedback to the next question.
     """
     try:
         response = openai.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.5
         )
         return response.choices[0].message.content
     except Exception as e:
         print(f"AI Transition Error: {e}")
-        return next_question # Fallback to just the question
+        return next_question
 
+# -------------------------------
+# Audio Transcription with Whisper
+# -------------------------------
+def transcribe_audio(audio_file: UploadFile) -> str:
+    """
+    Transcribes an uploaded audio file.
+    """
+    temp_dir = "temp_audio"
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+        
+    temp_filename = f"{temp_dir}/{uuid.uuid4()}-{audio_file.filename}"
+    
+    try:
+        # Read the file content into a bytes object in memory
+        file_content = audio_file.file.read()
+        
+        # Check if the file is empty before proceeding
+        if not file_content or os.path.getsize(temp_filename) == 0:
+            os.remove(temp_filename)
+            return "Voice not recorded" # <-- Returns a specific string instead of raising an error
+            
+        # Use pydub to load the file from disk and process it
+        audio = AudioSegment.from_file(temp_filename, format="webm")
+        wav_io = io.BytesIO()
+        audio.export(wav_io, format="wav")
+        wav_io.seek(0)
+        
+        # Send the new WAV file content to the OpenAI API
+        response = openai.audio.transcriptions.create(
+            model="whisper-1",
+            file=(audio_file.filename.replace('.webm', '.wav'), wav_io.read(), "audio/wav")
+        )
+        
+        os.remove(temp_filename) # Clean up the temporary file
+        return response.text
+    
+    except Exception as e:
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
+        print(f"Whisper Transcription Error: {e}")
+        raise HTTPException(status_code=500, detail="Transcription failed. Please check your audio format.")
+
+# -------------------------------
+# Summary Feedback
+# -------------------------------
 def generate_summary_feedback(history: list):
-    """
-    Provide your response as a single, valid JSON object with two keys: "strengths" and "areas_for_improvement".
-    Each key should be a list of **short, bullet-point strings**. The strings should be **high-level summaries, not the full question text**.
-    """
     history_text = "\n\n".join([
         f"Question: {item['question_text']}\nAnswer: {item['answer']}\nFeedback: {item['evaluation']['feedback']}\nScore: {item['evaluation']['average_score']}"
         for item in history
     ])
-
     user_prompt = f"""
-    You are an AI interviewer providing a final summary. Based on the following interview history,
-    generate a list of a candidate's key strengths and areas for improvement.
-
+    You are an AI interviewer providing a final summary. Based on interview history, generate key strengths and areas for improvement.
     Interview History:
     {history_text}
-
-    Provide your response as a single, valid JSON object with two keys: "strengths" and "areas_for_improvement".
-    Each key should be a list of short, bullet-point strings. The strings should be high-level summaries, not the full question text.
-    
-    Example:
-    {{
-        "strengths": ["Understanding of conditional formulas", "Ability to use advanced lookup functions"],
-        "areas_for_improvement": ["Lack of detail in formula explanations", "Incomplete knowledge of modern functions"]
-    }}
+    Provide output as JSON with keys: "strengths", "areas_for_improvement".
     """
-    
     try:
         response = openai.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a professional technical interviewer."},
                 {"role": "user", "content": user_prompt}

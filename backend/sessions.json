@@ -1,63 +1,274 @@
 {
-  "b96ebf35-9fd7-47a3-9ebd-8738dd958337": {
+  "8221e4e6-284c-4f92-95ca-0dc9bb7d5a81": {
     "stage": 1,
     "questions_asked": [
       {
-        "id": "c13630a0-8bda-4ff5-9f5e-60509ddc37c8",
-        "question_text": "What are some common methods to handle missing data in Excel, and when would you use them?",
-        "ideal_answer": "In Excel, missing data can be handled in various ways depending on the context and requirement. Some common methods include: \n1. Using the function `IFERROR()` to replace errors, which often represent missing data, with a default value like zero or a custom message. This is useful in calculations where excluding errors or substituting them can aid in more accurate results.\n2. Using `ISBLANK()` in combination with `IF()` function to test if cells are empty and then deciding to substitute them with a specified value or to perform a different action. This method is particularly useful in data entry and cleaning processes to ensure data completeness.\n3. Applying filters to either temporarily remove or assess the extent of missing data without actually altering the original data set. This is helpful for analysis and decision-making processes.\n4. Utilizing conditional formatting to highlight missing values, which helps in visually scanning and identifying gaps in large datasets prior to performing any further analysis or data processing."
+        "id": "dd79c7fe-13de-4b3b-919d-539202e45b7e",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example where each type would be appropriate.",
+        "ideal_answer": "In Excel, relative cell references change based on the location to which they are copied or dragged. Absolute cell references, on the other hand, remain fixed regardless of where they are copied. For example, if you have a formula '=A1+B1' in cell C1 and copy it to cell C2, a relative reference will change the formula to '=A2+B2' while an absolute reference like '=A$1+B$1' will stay as '=A$1+B$1'. An example where a relative reference would be appropriate is when summing values in a column to get a running total, as you want the formula to adjust based on the row. An absolute reference would be suitable when referring to a constant value or a fixed range in a formula that should not change when copied to other cells."
+      }
+    ],
+    "history": []
+  },
+  "e7358e55-6271-49b7-8dbf-12eb73f901de": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "e12d87f0-e21d-4b91-8e3a-f360c9e813e1",
+        "question_text": "Explain the difference between absolute and relative cell references in Excel and provide an example of when each type would be used.",
+        "ideal_answer": "In Excel, absolute cell references are indicated by adding a dollar sign ($) before the column and/or row identifier (e.g., $A$1). Absolute references do not change when copied or filled. Relative cell references, on the other hand, adjust based on their location when copied or filled. For example, absolute references are typically used when referencing constant values or when creating formulas that should always refer to a specific cell, while relative references are used when creating formulas that need to adjust based on their relative position, such as when summing a range of cells in different rows."
+      }
+    ],
+    "history": []
+  },
+  "58066cca-d640-456c-9c65-6d378cf2f772": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "5ea8dba8-9c3e-4f7a-9a4b-72ac973a33e0",
+        "question_text": "Explain the difference between relative cell references and absolute cell references in Excel formulas, and provide an example of when each type would be used.",
+        "ideal_answer": "Relative cell references in Excel formulas change based on the position they are copied or filled to. Absolute cell references, denoted by '$' in front of the column and/or row reference, remain constant regardless of where they are copied. For example, if cell A1 contains the formula '=B1' and is copied to cell A2, the formula in A2 will automatically update to '=B2' due to relative referencing. In contrast, if the formula in A1 is changed to '= $B$1' and then copied to cell A2, the formula will still reference cell B1 in both cells A1 and A2, as the absolute reference remains fixed."
       },
       {
-        "id": "7664e39f-c185-4f05-a395-e59d261d7ebc",
-        "question_text": "In Excel, how would you conditionally format a range of cells based on whether their values are above or below the average of that range?",
-        "ideal_answer": "To conditionally format a range of cells based on whether their values are above or below the average, you would follow these steps: \n1. Select the range of cells you want to format. \n2. Go to the 'Home' tab, click on 'Conditional Formatting' in the Styles group and choose 'New Rule'. \n3. In the New Formatting Rule dialog box, select 'Use a formula to determine which cells to format'. \n4. Enter the formula '=A1>AVERAGE($A$1:$A$10)' in the format values where this formula is true box to format cells that are above the average, by replacing 'A1' and 'A$1:$A$10' with the appropriate cell references for your data. \n5. Click on 'Format', choose the formatting options you want to apply when the condition is true, and then click 'OK'. \n6. To add a rule for below the average, repeat the steps, but use the formula '=A1<AVERAGE($A$1:$A$10)'. \nThis method uses Conditional Formatting with a custom formula that dynamically checks if each cell's value is above or below the average of the specified range and applies the chosen formatting style based on the result."
+        "id": "b8aa7f2a-9558-43b2-9455-e7cb3f1576b6",
+        "question_text": "Explain the difference between absolute and relative cell references in Excel and provide an example of when each type would be useful.",
+        "ideal_answer": "Absolute cell references in Excel are fixed references that do not change when a formula is copied to another cell. They are denoted by adding a dollar sign ($) before the column letter and row number (e.g., $A$1). Relative cell references, on the other hand, are flexible references that change based on the relative position of the cells. They do not have dollar signs and adjust when the formula is copied to a different cell. An example where absolute cell references are useful is when calculating a tax rate that remains constant for all cells. Relative cell references are handy when summing a series of numbers in different rows, as the formula adjusts to each row's values."
       },
       {
-        "id": "21753dd3-4756-4953-8dd6-da112321d138",
-        "question_text": "Explain how you would use conditional formatting in Excel to highlight cells that are above the average value in a list of numbers. Include how you would set up the conditional formatting rule.",
-        "ideal_answer": "To highlight cells above the average in a list using conditional formatting in Excel, you first select the cells that contain the list of numbers. Then, go to the 'Home' tab and click on 'Conditional Formatting' in the 'Styles' group. Choose 'New Rule' and then select 'Use a formula to determine which cells to format'. Enter the formula '=A1>AVERAGE($A$1:$A$10)' if your list is in cells A1 to A10, adjusting the range accordingly to your list. Click 'Format', choose your desired formatting style, such as setting the fill color to yellow, and then click 'OK'. Finally, click 'OK' again to apply the rule. This rule will now highlight any cell in the range whose value is greater than the average of all values in the specified range."
+        "id": "69e9c7eb-b7fa-4967-9c82-5a4f5407fc62",
+        "question_text": "Explain the purpose and function of the CONCATENATE function in Excel.",
+        "ideal_answer": "The CONCATENATE function in Excel is used to combine multiple strings of text into one single string. It takes multiple arguments and joins them together. For example, if you have text in cell A1 as 'Hello' and text in cell B1 as 'World', the formula =CONCATENATE(A1, B1) would result in 'HelloWorld'. Another way to achieve the same result is by using the '&' operator like this: =A1&B1."
+      },
+      {
+        "id": "03d595e3-fe71-479c-9686-eb0bdb8606ce",
+        "question_text": "Explain the difference between relative cell references and absolute cell references in Excel, and provide an example of when you would use each.",
+        "ideal_answer": "Relative cell references in Excel adjust when copied or moved to new cells, changing based on their new position. Absolute cell references, identified by the addition of $ symbols, do not change when copied or moved. For example, when summing a range of cells where one reference should remain constant (such as a tax rate in cell $A$1), an absolute reference ($A$1) would be used to ensure that the tax rate is consistent across all calculations."
+      },
+      {
+        "id": "1864af1d-7f39-4bdf-8527-e1ec905187af",
+        "question_text": "Explain the difference between relative cell references, absolute cell references, and mixed cell references in Excel. Provide an example of when each type would be useful.",
+        "ideal_answer": "Relative cell references in Excel will change when copied to another cell, adjusting based on the new location. Absolute cell references remain fixed when copied, using the '$' symbol before the column and/or row (e.g., $A$1). Mixed cell references lock either the column or row when copied, but not both (e.g., A$1 or $A1). Relative references are useful for calculations spanning multiple cells, while absolute references are handy when constant values need to be retained. Mixed references are helpful in scenarios where a column or row should stay fixed, but the other should adjust."
       }
     ],
     "history": [
       {
-        "question_id": "c13630a0-8bda-4ff5-9f5e-60509ddc37c8",
-        "question_text": "What are some common methods to handle missing data in Excel, and when would you use them?",
-        "answer": "i dont know",
+        "question_id": "5ea8dba8-9c3e-4f7a-9a4b-72ac973a33e0",
+        "question_text": "Explain the difference between relative cell references and absolute cell references in Excel formulas, and provide an example of when each type would be used.",
+        "answer": "we",
         "evaluation": {
-          "average_score": 1.0,
-          "feedback": "The answer provided fails to meet the expectations for a technical role involving Excel data analysis. Simply stating a lack of knowledge does not demonstrate any expertise or understanding of handling missing data in Excel, which is a fundamental skill for data-related tasks. It would be beneficial to familiarize yourself with basic Excel functions such as IFERROR, ISBLANK, and methods like filtering and conditional formatting, which are essential for data management and analysis.",
+          "average_score": 2,
+          "feedback": "The candidate's answer is extremely incomplete and lacks any substance to address the question. It does not demonstrate any understanding of the topic. Considerably low scores across all criteria.",
           "is_sufficient": false
         }
       },
       {
-        "question_id": "7664e39f-c185-4f05-a395-e59d261d7ebc",
-        "question_text": "In Excel, how would you conditionally format a range of cells based on whether their values are above or below the average of that range?",
-        "answer": "Select the Range:\n\nHighlight the cells you want to format. For example, B2:B20.\n\nOpen Conditional Formatting:\n\nGo to Home \u2192 Conditional Formatting \u2192 New Rule.\n\nChoose Formula-Based Rule:\n\nSelect \u201cUse a formula to determine which cells to format\u201d.\n\nCreate the Rule for Above Average:",
+        "question_id": "b8aa7f2a-9558-43b2-9455-e7cb3f1576b6",
+        "question_text": "Explain the difference between absolute and relative cell references in Excel and provide an example of when each type would be useful.",
+        "answer": "dvscs",
         "evaluation": {
-          "average_score": 2.75,
-          "feedback": "Your initial steps for selecting the range and navigating to Conditional Formatting were correct, laying a good foundation. However, you did not complete the explanation, particularly failing to specify the formulas required for determining if the cell values are above or below average. This incomplete guidance leaves out critical details needed for implementing the solution effectively. Also, the response could be improved by ensuring the formula's accuracy and adaptability to different ranges, not just a predefined set of cells. It\u2019s important to detail both the setting of conditional formats for above and below average scenarios to meet the requirements of the query.",
+          "average_score": 1,
+          "feedback": "The candidate's answer lacks any relevant information on the topic. It appears to be completely off-topic and does not address the question asked.",
           "is_sufficient": false
         }
       },
       {
-        "question_id": "21753dd3-4756-4953-8dd6-da112321d138",
-        "question_text": "Explain how you would use conditional formatting in Excel to highlight cells that are above the average value in a list of numbers. Include how you would set up the conditional formatting rule.",
-        "answer": "Select the Range of Numbers\nFor example, suppose your numbers are in A2:A20. Highlight this range.\n\nOpen Conditional Formatting\nGo to the Home tab \u2192 Conditional Formatting \u2192 New Rule.\n\nChoose a Formula-Based Rule\nSelect \u201cUse a formula to determine which cells to format.\u201d",
+        "question_id": "69e9c7eb-b7fa-4967-9c82-5a4f5407fc62",
+        "question_text": "Explain the purpose and function of the CONCATENATE function in Excel.",
+        "answer": "sdv ,x md cm ds",
         "evaluation": {
-          "average_score": 2.75,
-          "feedback": "Your response provides a basic understanding of how to initiate conditional formatting with a formula in Excel, laying out a simple step-by-step process up to the point of selecting the formula-based rule. However, the answer misses specific details like how to correctly write and apply the conditional formatting formula to highlight cells above average, the step of choosing formatting options, and the final steps to apply the rule. Additionally, mentioning explicitly the range in the formula (e.g., '$A$2:$A$20') and the need for absolute references to ensure the formula applies consistently across the range would make your explanation more practical and easier to follow. Adding a closure on how to apply and confirm the conditional format settings would enhance the completeness of your answer.",
+          "average_score": 2,
+          "feedback": "The candidate's response is extremely lacking in terms of correctness, completeness, and best practices. They provided an unrelated and incorrect answer. It is not sufficient for the advanced Excel position.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "03d595e3-fe71-479c-9686-eb0bdb8606ce",
+        "question_text": "Explain the difference between relative cell references and absolute cell references in Excel, and provide an example of when you would use each.",
+        "answer": "saamd asm,c ,s ckas",
+        "evaluation": {
+          "average_score": 1,
+          "feedback": "The candidate's answer lacks clarity, correctness, completeness, and best practices. It does not address the question effectively.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "1864af1d-7f39-4bdf-8527-e1ec905187af",
+        "question_text": "Explain the difference between relative cell references, absolute cell references, and mixed cell references in Excel. Provide an example of when each type would be useful.",
+        "answer": "msv",
+        "evaluation": {
+          "average_score": 1,
+          "feedback": "The candidate's answer is very incomplete, lacking any relevant information. The response 'msv' does not address the question at all. They received a low score on correctness, completeness, best practices, and clarity.",
           "is_sufficient": false
         }
       }
     ]
   },
-  "211c487c-b6e4-4717-b6ab-d56711c79ab1": {
+  "3f1225a0-a33f-4b75-b1b7-6ec19335107b": {
     "stage": 1,
     "questions_asked": [
       {
-        "id": "169f7718-c3e7-417b-ab40-6c821d708506",
-        "question_text": "Explain how to use the PivotTable feature in Excel to analyze sales data. What are the steps to create a PivotTable, and how can you use it to summarize data by region and product type?",
-        "ideal_answer": "To use PivotTable for analyzing sales data, you first need to ensure your data range is formatted as a table with clear column headers. This data should include at least the regions, product types, and sales figures. \n\nStep 1: Select any cell within your dataset. \nStep 2: Go to the 'Insert' tab on the ribbon and click 'PivotTable'. A dialog box will appear. \nStep 3: In the 'Create PivotTable' dialog box, choose whether you want the PivotTable to be placed in a new worksheet or an existing one. \nStep 4: After clicking 'OK,' Excel will create a blank PivotTable and display a list of field names (column headers) in the PivotTable field list. \nStep 5: Drag the 'Region' field to the Rows area, and the 'Product Type' field to the Columns area. Drag the 'Sales' field to the Values area. This setup will summarize sales data, showing total sales per product type across each region. \n\nPivotTables are powerful because they allow you to quickly reorganize and summarize large amounts of data, filtering and sorting as necessary. Additionally, using the PivotTable tools, you can format the summary into a report-friendly layout, apply conditional formatting, and insert calculated fields to further your analysis."
+        "id": "440d6a87-8200-47e3-a9d5-f28805e9bbbf",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example of when each type would be used.",
+        "ideal_answer": "Relative cell references in Excel are dynamic and change when a formula is copied to another cell. Absolute cell references, denoted by adding a '$' before the column letter or row number, remain constant when copied. For example, if you have a formula '=A1+B1' in cell C1 and copy it to cell C2, the relative reference will change to '=A2+B2'. An absolute reference, like '=A$1+B$1', would remain the same as '=A$1+B$1'. Relative references are typically used when you want a formula to adjust based on its location, while absolute references are used when you want a specific cell or range to always be referenced."
+      },
+      {
+        "id": "c6773fc1-5bbc-474e-8a41-cc3b651f43dd",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example of when each type of reference would be useful.",
+        "ideal_answer": "In Excel, a relative cell reference changes based on the direction in which a formula is copied or filled. For example, if a formula in cell A1 referencing cell B1 is copied to cell A2, it will automatically adjust to reference cell B2. On the other hand, an absolute cell reference remains constant regardless of where the formula is copied. By adding a dollar sign ($) before the column letter and/or row number (e.g., $B$1), the reference will not change. Relative references are useful when you want formulas to adjust based on their new location when copied, while absolute references are helpful when you want a reference to remain fixed, such as when working with constant values or certain headers in a formula."
+      },
+      {
+        "id": "bbf01336-94d1-4d20-9f0a-3c78aa614d37",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example of when each type would be used.",
+        "ideal_answer": "Relative cell references in Excel change based on the relative position of the formula cell and the referenced cell. For example, if you copy a formula =A1+B1 from cell C1 to cell C2, it will automatically adjust to =A2+B2. Absolute cell references, on the other hand, always refer to a specific cell, denoted by adding a $ before the column letter or row number (e.g., $A$1). These are used when you want a cell reference to remain constant when copied across multiple cells. For instance, if you have a tax rate in cell A1 that needs to be applied to values in column B, you would use an absolute reference for the tax rate cell to ensure it stays the same in all calculations."
+      },
+      {
+        "id": "259d4a56-9ce5-466d-8368-d68992e0ad4e",
+        "question_text": "Explain the difference between a relative reference and an absolute reference in Excel, and provide an example of when you would use each.",
+        "ideal_answer": "In Excel, a relative reference adjusts based on the cell's location when copied or filled, while an absolute reference remains constant. For example, if cell A1 contains the formula '=B1', when copied to the right to cell B1, it will automatically update to '=C1' (relative reference). However, if cell A1 contains the formula '=$B$1', when copied to any other cell, it will always refer to cell B1 (absolute reference). Relative references are useful for formulas that need to adjust based on their position, while absolute references are helpful when a specific cell reference should not change."
+      },
+      {
+        "id": "7b36d6bc-9d3f-46df-b715-83d1712b1c32",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel and provide an example of when each type would be useful.",
+        "ideal_answer": "Relative cell references in Excel change when a formula is copied or filled to other cells. Absolute cell references, identified by adding '$' before the row and/or column, do not change when copied. For example, if cell A1 contains the formula '=B1+C1' and is copied to cell A2, the formula will automatically adjust to '=B2+C2' due to relative references. To keep the references fixed, one can use absolute references like '=B$1+C$1' so that both B1 and C1 are consistently used in calculations across cells."
+      }
+    ],
+    "history": [
+      {
+        "question_id": "440d6a87-8200-47e3-a9d5-f28805e9bbbf",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example of when each type would be used.",
+        "answer": "ds",
+        "evaluation": {
+          "average_score": 1,
+          "feedback": "The candidate's answer is incomplete and lacks depth. They provided an insufficient response to the question. The explanation is non-existent or missing, leading to a very low score across all evaluation criteria.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "c6773fc1-5bbc-474e-8a41-cc3b651f43dd",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example of when each type of reference would be useful.",
+        "answer": "sfxcv f",
+        "evaluation": {
+          "average_score": 1,
+          "feedback": "The candidate's response lacks essential information and coherence, resulting in a very low score. They failed to address the question adequately.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "bbf01336-94d1-4d20-9f0a-3c78aa614d37",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example of when each type would be used.",
+        "answer": "n b dsncbj df",
+        "evaluation": {
+          "average_score": 1,
+          "feedback": "The candidate's answer lacks any relevant information regarding relative and absolute cell references in Excel. It is incomplete and does not demonstrate a basic understanding of the concept. Improvement is needed.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "259d4a56-9ce5-466d-8368-d68992e0ad4e",
+        "question_text": "Explain the difference between a relative reference and an absolute reference in Excel, and provide an example of when you would use each.",
+        "answer": "zc m sd ds",
+        "evaluation": {
+          "average_score": 2,
+          "feedback": "The candidate's answer lacks correctness, completeness, and clarity. They did not address the question adequately and provided a response that does not demonstrate understanding of relative and absolute references in Excel.",
+          "is_sufficient": false
+        }
+      },
+      {
+        "question_id": "7b36d6bc-9d3f-46df-b715-83d1712b1c32",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel and provide an example of when each type would be useful.",
+        "answer": "cdzm czd",
+        "evaluation": {
+          "average_score": 1,
+          "feedback": "The candidate's answer is extremely insufficient as it lacks any relevant information on relative and absolute cell references in Excel. They did not demonstrate understanding or knowledge of the concept as asked in the question.",
+          "is_sufficient": false
+        }
+      }
+    ]
+  },
+  "69e12b94-9318-411b-b2fa-2e28fc2e967c": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "3ead6b72-bd21-4fb4-ab96-aaa19ed38d52",
+        "question_text": "How would you freeze panes in an Excel worksheet, and why would you use this feature?",
+        "ideal_answer": "To freeze panes in Excel, you can go to the 'View' tab and click on 'Freeze Panes.' This feature is used to keep specific rows or columns visible while scrolling through a large dataset, making it easier to compare data in different parts of the worksheet. By freezing panes, you can ensure important headers or labels remain visible regardless of how far you scroll in the worksheet."
+      }
+    ],
+    "history": []
+  },
+  "8af7d38e-5b08-4e46-b0e0-814c1d4a89dc": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "66c1fafb-f2c9-490a-9d62-c953102b3c86",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel, and provide an example of how each type of reference can be used in a formula.",
+        "ideal_answer": "Relative cell references in Excel adjust based on the position of the formula when copied or filled. For example, if cell A1 contains the formula '=A2', copying it to B1 will change the reference to '=B2'. Absolute cell references, denoted by '$' in front of the column and/or row (e.g., '$A$1'), do not change when copied. For example, if cell B1 contains the formula '=$A$1', when copied to B2, it will still refer to cell A1. This distinction is crucial when creating formulas that need to refer to specific cells consistently."
+      }
+    ],
+    "history": []
+  },
+  "6d556e37-dfb2-4972-9496-ac1dde206e50": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "dac56f62-c684-47cc-aaeb-586233d04230",
+        "question_text": "Explain the difference between a relative cell reference and an absolute cell reference in Excel, and provide an example of when each type is useful.",
+        "ideal_answer": "In Excel, a relative cell reference changes when the formula is copied or moved to another cell, adjusting its position relative to the new location. For example, when using cell references like A1 or B2 in a formula, they are considered relative references by default. On the other hand, an absolute cell reference remains constant regardless of where the formula is copied or moved. This is denoted by adding a dollar sign ($) before the column and/or row reference (e.g., $A$1 or $B$2). Absolute references are useful when you want to fix a specific cell in a formula to prevent it from changing. For instance, when calculating tax based on a fixed tax rate stored in a specific cell, you would use an absolute reference to that cell to ensure the tax rate remains constant in all calculations."
+      }
+    ],
+    "history": []
+  },
+  "e4875340-ec8f-436c-a2e3-6b391da49978": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "22e489e6-af58-4230-94c5-0caa736327ce",
+        "question_text": "Explain the difference between a relative reference and an absolute reference in Excel formulas, and provide an example of when you would use each type of reference.",
+        "ideal_answer": "In Excel, a relative reference changes when a formula is copied to another cell, adjusting its position relative to the new location. An absolute reference, indicated by adding a '$' symbol before the column letter and/or row number, remains constant when copied. For example, if we have a formula '=A1*$B$1' in cell C1, the reference to cell A1 is relative (it will change when copied), while the reference to cell B1 is absolute (it will not change when copied). We might use a relative reference when calculating percentage increase across multiple rows, and an absolute reference when working with constant values or references that should not change during copying."
+      }
+    ],
+    "history": []
+  },
+  "868f1707-96f1-4b37-b580-7a6e5f2f9aa9": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "b42d7437-d3e9-45ad-bb1a-13f148dcac37",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel and provide an example of when each would be used.",
+        "ideal_answer": "Relative cell references in Excel change based on the location where a formula is copied or filled, adjusting the reference relative to the new location. Absolute cell references, denoted by adding a $ before the column letter and row number (e.g., $A$1), remain constant when copied or filled. An example of when to use relative references is when summing a column of numbers where the formula needs to adjust for each row. Absolute references are useful when a specific cell or range in a formula should always refer to the same cell, such as when calculating tax on a fixed rate applied to a specific cell."
+      }
+    ],
+    "history": []
+  },
+  "9b6b430c-e8ec-464c-81df-80782194c70e": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "a77e3c4c-6f2f-4592-a86e-07e887d29107",
+        "question_text": "Explain the difference between relative cell references and absolute cell references in Excel formulas.",
+        "ideal_answer": "In Excel, relative cell references change when a formula is copied to other cells. For example, if a formula refers to cell A1 and is copied to the cell below, it will reference A2 instead. Absolute cell references, denoted by a dollar sign before the column letter and/or row number (e.g., $A$1), do not change when copied. They always refer to the same cell, regardless of where the formula is copied."
+      }
+    ],
+    "history": []
+  },
+  "67716d9c-db38-4541-835a-b459d280f20f": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "60c9193f-6df6-46e0-bf6d-75b8667a4255",
+        "question_text": "Explain the difference between absolute and relative cell references in Excel, and provide an example of when each type would be useful.",
+        "ideal_answer": "Absolute cell references in Excel are denoted by adding a '$' symbol before the column letter and/or row number, such as $A$1. When copied or dragged, absolute references do not change, making them useful for fixed values in formulas like tax rates or constants. Relative cell references, on the other hand, adjust their position when copied or filled across cells. For example, if a formula referencing cell A1 is copied one cell to the right, it will automatically adjust to reference cell B1. Relative references are handy for creating formulas that can be applied across multiple rows or columns without manual adjustments."
+      }
+    ],
+    "history": []
+  },
+  "14fe706d-2b8c-47a3-b626-9e231badf42e": {
+    "stage": 1,
+    "questions_asked": [
+      {
+        "id": "35b94327-e2e7-4356-8692-8b31182b69f0",
+        "question_text": "Explain the difference between relative and absolute cell references in Excel and provide an example of when each should be used.",
+        "ideal_answer": "Relative cell references in Excel change when a formula is copied to another cell, adjusting based on the new position. Absolute cell references, on the other hand, remain constant regardless of where the formula is copied. For example, if cell A1 contains the value 10 and cell A2 contains the formula '=A1*2', dragging the formula from cell A2 to B2 will update the reference in the formula if it's relative (e.g., '=A2*2'), but not if it's absolute (e.g., '=$A$1*2'). Relative references are typically used when formulas need to adjust to different rows or columns, while absolute references are used when a fixed value needs to be applied in all instances."
       }
     ],
     "history": []
