@@ -1,47 +1,29 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import datetime
 import uuid
-from sqlalchemy import create_engine, Column, String, Integer, Float, DateTime, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-DATABASE_URL = "sqlite:///./mock_interview.db"  # can be postgres later
-
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine)
-Base = declarative_base()
-
-# ------------------- Models -------------------
-class Session(Base):
-    __tablename__ = "sessions"
-    session_id = Column(String, primary_key=True, index=True)
-    candidate_name = Column(String)
-    start_time = Column(DateTime)
-    last_question_index = Column(Integer, default=-1)
-
-class Answer(Base):
-    __tablename__ = "answers"
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String, ForeignKey("sessions.session_id"))
-    question_index = Column(Integer)
-    answer = Column(String)
-    evaluation_score = Column(Float)
-    feedback = Column(String)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-
-Base.metadata.create_all(bind=engine)
+import csv
+import os
+import json
+from datetime import datetime
 
 # ------------------- App Setup -------------------
 app = FastAPI()
 
-origins = ["https://mock-ai-interview-psi.vercel.app", "http://localhost:3000"]
+origins = [
+    "https://mock-ai-interview-psi.vercel.app",
+    "http://localhost:3000",
+]
+
 app.add_middleware(
-    CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# ------------------- Request Models -------------------
+# ------------------- Models -------------------
 class StartRequest(BaseModel):
     candidate_name: str = "Anonymous"
 
@@ -52,50 +34,92 @@ class AnswerRequest(BaseModel):
     evaluation_score: float
     feedback: str
 
+# ------------------- Storage -------------------
+RESULTS_DIR = "results"
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
+SESSIONS_FILE = "sessions.json"
+
+# Load sessions from file if exists
+if os.path.exists(SESSIONS_FILE):
+    with open(SESSIONS_FILE, "r") as f:
+        active_sessions = json.load(f)
+else:
+    active_sessions = {}
+
+# Helper function to save sessions to disk
+def save_sessions():
+    with open(SESSIONS_FILE, "w") as f:
+        json.dump(active_sessions, f, indent=2, default=str)
+
 # ------------------- Routes -------------------
 @app.post("/start")
 def start_interview(request: StartRequest):
-    db = SessionLocal()
     session_id = str(uuid.uuid4())
-    new_session = Session(
-        session_id=session_id,
-        candidate_name=request.candidate_name,
-        start_time=datetime.utcnow()
-    )
-    db.add(new_session)
-    db.commit()
-    db.close()
+    active_sessions[session_id] = {
+        "candidate_name": request.candidate_name,
+        "start_time": datetime.now().isoformat(),
+        "last_question_index": -1  # no question answered yet
+    }
+    save_sessions()  # persist session
+
+    # Create CSV file for storing answers
+    csv_file = os.path.join(RESULTS_DIR, f"{session_id}.csv")
+    with open(csv_file, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["question_index", "answer", "evaluation_score", "feedback"])
+        writer.writeheader()
 
     first_question = {"text": "What is the keyboard shortcut to lock a cell reference in Excel?"}
+
     return {"session_id": session_id, "question": first_question}
+
 
 @app.post("/answer")
 def submit_answer(payload: AnswerRequest):
-    db = SessionLocal()
-    session_obj = db.query(Session).filter(Session.session_id == payload.session_id).first()
+    # Handle invalid session: create new session automatically
+    if payload.session_id not in active_sessions:
+        new_session_id = str(uuid.uuid4())
+        active_sessions[new_session_id] = {
+            "candidate_name": "Anonymous",
+            "start_time": datetime.now().isoformat(),
+            "last_question_index": -1
+        }
+        save_sessions()
 
-    # Handle invalid session
-    if not session_obj:
-        db.close()
-        return {"error": "Invalid session ID. Please start a new session."}
+        # create new CSV file
+        csv_file = os.path.join(RESULTS_DIR, f"{new_session_id}.csv")
+        with open(csv_file, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["question_index", "answer", "evaluation_score", "feedback"])
+            writer.writeheader()
 
-    # Save answer
-    answer = Answer(
-        session_id=payload.session_id,
-        question_index=payload.question_index,
-        answer=payload.answer,
-        evaluation_score=payload.evaluation_score,
-        feedback=payload.feedback
-    )
-    db.add(answer)
+        return {
+            "error": "Invalid session ID. Started new session automatically.",
+            "new_session_id": new_session_id,
+            "question": {"text": "What is the keyboard shortcut to lock a cell reference in Excel?"}
+        }
 
-    # Update last question index
-    session_obj.last_question_index = payload.question_index
-    db.commit()
-    db.close()
+    session_id = payload.session_id
+    csv_file = os.path.join(RESULTS_DIR, f"{session_id}.csv")
+    if not os.path.exists(csv_file):
+        raise HTTPException(status_code=500, detail="Session file missing. Please restart.")
 
+    # store answer
+    with open(csv_file, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["question_index", "answer", "evaluation_score", "feedback"])
+        writer.writerow({
+            "question_index": payload.question_index,
+            "answer": payload.answer,
+            "evaluation_score": payload.evaluation_score,
+            "feedback": payload.feedback
+        })
+
+    # Update session
+    active_sessions[session_id]["last_question_index"] = payload.question_index
+    save_sessions()  # persist updated session
+
+    # For demo, send next question or summary
     next_question_index = payload.question_index + 1
-    if next_question_index >= 5:
+    if next_question_index >= 5:  # max 5 questions per session
         return {"summary": {
             "total_questions": next_question_index,
             "overall_score": round(payload.evaluation_score, 1),
