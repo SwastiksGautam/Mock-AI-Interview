@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import os
 
 # Import the interview router
-from app.routes import interview
+from app.routes.interview import router
+
 
 load_dotenv()
 
@@ -26,7 +27,7 @@ app.add_middleware(
 )
 
 # Include the router from the interview module
-app.include_router(interview.router)
+app.include_router(router)
 
 @app.get("/")
 def root():
