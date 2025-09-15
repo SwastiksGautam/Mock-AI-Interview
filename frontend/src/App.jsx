@@ -162,20 +162,33 @@ function App() {
             setIsLoading(false);
         }
     };
+
+
     const handleAnswerSubmit = async (answer) => {
+        if (!sessionId) {
+            setError("No valid session. Please restart the interview.");
+            return;
+        }
+
         setChatHistory(prev => [...prev, { sender: 'user', text: answer }]);
         setIsLoading(true);
-        setError(null);
 
         try {
             const data = await submitAnswer(sessionId, answer);
-            console.log('API response:', data); // 🔍 Log the full API response
+            console.log('Backend response:', data);
+
+            if (data.error) {
+                setError(`Backend error: ${data.error}`);
+                return;
+            }
 
             if (data.summary) {
                 setSummary(data.summary);
                 setInterviewState('completed');
-            } else if (data.question) {
+            } else if (data.question?.text) {
                 setChatHistory(prev => [...prev, { sender: 'ai', text: data.question.text }]);
+            } else {
+                setChatHistory(prev => [...prev, { sender: 'ai', text: 'Next question is not available yet.' }]);
             }
         } catch (err) {
             setError('An error occurred. Please try submitting your answer again.');
@@ -183,6 +196,7 @@ function App() {
             setIsLoading(false);
         }
     };
+
 
 
 
