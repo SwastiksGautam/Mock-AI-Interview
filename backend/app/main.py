@@ -1,25 +1,24 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.routes import interview
 
-router = APIRouter()
+app = FastAPI()  # <-- Gunicorn looks for this exact name
 
-sessions = {}  # example in-memory session storage
+origins = [
+    "http://localhost:3000",
+    "https://mock-ai-interview-psi.vercel.app",
+]
 
-class AnswerPayload(BaseModel):
-    session_id: str
-    answer: str
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@router.post("/answer")
-def submit_answer(payload: AnswerPayload):
-    session_id = payload.session_id
-    answer = payload.answer
+app.include_router(interview.router)
 
-    if session_id not in sessions:
-        return {
-            "error": "Invalid session ID. Please restart the interview."
-        }
-
-    # normal processing here
-    session = sessions[session_id]
-    # ... compute next question or summary
-    return {"question": session.get_next_question()}
+@app.get("/")
+def root():
+    return {"message": "Excel Mock Interviewer Backend Running"}
