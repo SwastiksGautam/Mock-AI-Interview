@@ -1,3 +1,6 @@
+
+
+
 # app/services/evaluator.py
 import os
 import json
@@ -126,30 +129,18 @@ def generate_transition(feedback: str, next_question: str) -> str:
 # -------------------------------
 def transcribe_audio(audio_file: UploadFile) -> str:
     """
-    Transcribes an uploaded audio file directly from memory.
+    Transcribes an audio file to text using OpenAI's Whisper model.
+    Streams the file content directly to the API without conversion.
     """
     try:
-        # Check if the file is empty before proceeding
-        if audio_file.file is None or audio_file.file.tell() == 0:
-            return "Voice not recorded"
-            
-        # Pydub needs to read from a file-like object, which UploadFile.file is
-        audio_file.file.seek(0) # Reset the file pointer to the beginning
-        audio = AudioSegment.from_file(audio_file.file, format="webm")
-        
-        # Export the audio to WAV format into an in-memory buffer
-        wav_io = io.BytesIO()
-        audio.export(wav_io, format="wav")
-        wav_io.seek(0) # Reset the buffer position
-        
-        # Send the in-memory WAV file content to the OpenAI API
+        if audio_file.file is None:
+            raise HTTPException(status_code=400, detail="Audio file is empty.")
+
         response = openai.audio.transcriptions.create(
             model="whisper-1",
-            file=(audio_file.filename.replace('.webm', '.wav'), wav_io.read(), "audio/wav")
+            file=audio_file.file
         )
-        
         return response.text
-    
     except Exception as e:
         print(f"Whisper Transcription Error: {e}")
         raise HTTPException(status_code=500, detail="Transcription failed. Please check your audio format.")
