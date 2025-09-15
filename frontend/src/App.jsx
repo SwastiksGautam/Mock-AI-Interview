@@ -22,9 +22,10 @@ const ExcelLogo = () => (
 // });
 
 const apiClient = axios.create({
-    baseURL: 'http://localhost:8000', // Change this to your local server address
+    baseURL: 'http://34.82.242.193:8000', // Public backend URL
     headers: { 'Content-Type': 'application/json' },
 });
+
 
 // --- API Calls ---
 const startInterview = async () => {
