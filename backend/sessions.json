@@ -1,0 +1,15 @@
+{
+  "d0566b64-63e5-467e-b109-73b994ea550a": {
+    "stage": 1,
+    "stage1_question_ids": [
+      1,
+      2
+    ],
+    "stage2_question_ids": [
+      3,
+      4
+    ],
+    "current_question_index": 0,
+    "history": []
+  }
+}

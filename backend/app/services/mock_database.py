@@ -1,5 +1,4 @@
 # app/services/mock_database.py
-
 # This is our local, in-memory "database" of questions.
 # It mimics the structure of our Supabase table.
 mock_questions = [
