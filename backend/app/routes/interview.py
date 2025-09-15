@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 
 import os
 
+# You must import the interview module before you can use it.
+from app.routes import interview
+
 load_dotenv()
 
 app = FastAPI()
@@ -23,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Now that the 'interview' module is imported, this line will work.
 app.include_router(interview.router)
 
 @app.get("/")
