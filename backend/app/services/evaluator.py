@@ -2,8 +2,58 @@
 import os
 import json
 import openai
+from pydantic import BaseModel
+import uuid # <-- Add this line
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+class QuestionGenerationOutput(BaseModel):
+    id: str
+    question_text: str
+    ideal_answer: str
+
+def generate_excel_question(stage: int, topic: str = "general") -> QuestionGenerationOutput:
+    """
+    Generates a new Excel interview question and an ideal answer using an LLM.
+    """
+    system_prompt = f"""
+    You are an expert Data Analyst and a technical interviewer for an advanced Excel position.
+    Your task is to generate a difficult and relevant Excel interview question for an advanced user.
+    The question should be practical and test core Excel skills.
+    For stage 1, the questions should be more foundational. For stage 2, they should be more complex.
+    
+    The output MUST be a single, valid JSON object with the following keys:
+    - "question_text": The Excel interview question.
+    - "ideal_answer": A detailed, expert-level answer that explains the solution, including relevant functions or methods.
+    
+    Example output:
+    {{"question_text": "How can you use the VLOOKUP function to return a value from a different worksheet, and what are its limitations?", "ideal_answer": "VLOOKUP can be used by referencing the other sheet... its main limitation is that it can only look up values to the right..."}}
+    """
+    user_prompt = f"""
+    Generate an Excel interview question for Stage {stage}. The topic is {topic}.
+    """
+    
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4-turbo", 
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
+        
+        # Parse the JSON response
+        generated_content = json.loads(response.choices[0].message.content)
+        
+        # Add a unique ID to the generated question for state management
+        generated_content['id'] = str(uuid.uuid4())
+        
+        return QuestionGenerationOutput(**generated_content)
+
+    except Exception as e:
+        print(f"AI Question Generation Error: {e}")
+        return QuestionGenerationOutput(id=str(uuid.uuid4()), question_text="What is the difference between INDEX-MATCH and VLOOKUP?", ideal_answer="INDEX-MATCH is more flexible than VLOOKUP...")
 
 def evaluate_answer(question_text: str, candidate_answer: str, ideal_answer: str):
     """

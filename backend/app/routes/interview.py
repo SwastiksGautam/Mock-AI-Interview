@@ -1,3 +1,4 @@
+# app/routes/interview.py
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import uuid
@@ -5,15 +6,13 @@ import os
 import json
 from datetime import datetime
 
-# Import the services correctly
-from app.services.mock_database import get_question, get_questions_by_stage
-from app.services.evaluator import evaluate_answer, generate_transition
+# Corrected import of services
+from app.services.evaluator import generate_excel_question, evaluate_answer, generate_transition
 
 router = APIRouter()
 
 # In-memory store for interview sessions.
 active_sessions = {}
-RESULTS_DIR = "results"
 SESSIONS_FILE = "sessions.json"
 
 # Helper function to save sessions to disk
@@ -25,29 +24,23 @@ def save_sessions():
 @router.post("/start")
 def start_interview():
     session_id = str(uuid.uuid4())
-    stage1_question_ids = get_questions_by_stage(1)
-    stage2_question_ids = get_questions_by_stage(2)
-
-    if not stage1_question_ids:
-        raise HTTPException(status_code=500, detail="Could not load Stage 1 questions.")
-
+    
+    # Dynamically generate the first question
+    first_question = generate_excel_question(stage=1)
+    
+    # Store the entire question object, including the ideal answer, in the session state
     active_sessions[session_id] = {
         "stage": 1,
-        "stage1_question_ids": stage1_question_ids,
-        "stage2_question_ids": stage2_question_ids,
-        "current_question_index": 0,
+        "questions_asked": [first_question.dict()], # Store as a list
         "history": []
     }
     save_sessions()
 
-    first_question_id = stage1_question_ids[0]
-    first_question = get_question(first_question_id)
-    
     return {
         "session_id": session_id,
         "question": {
-            "id": first_question['id'],
-            "text": f"Welcome to the interview! Let's start with some quick questions. First up: {first_question['question_text']}"
+            "id": first_question.id,
+            "text": f"Welcome! I'm your AI interviewer. Let's start with some quick questions. First up: {first_question.question_text}"
         }
     }
 
@@ -57,75 +50,69 @@ class AnswerRequest(BaseModel):
 
 @router.post("/answer")
 def submit_answer(request: AnswerRequest):
-    # Your /answer route logic here
     session_id = request.session_id
     if session_id not in active_sessions:
         raise HTTPException(status_code=404, detail="Interview session not found.")
 
     session = active_sessions[session_id]
-    stage = session["stage"]
-    index = session["current_question_index"]
     
-    # Get current question details from DB
-    current_question_list = session["stage1_question_ids"] if stage == 1 else session["stage2_question_ids"]
-    question_id = current_question_list[index]
-    question_data = get_question(question_id)
+    # Get the details of the question the user just answered
+    current_question_data = session["questions_asked"][-1]
     
-    # Evaluate the answer (this needs to be in your evaluator.py)
+    # Evaluate the answer using the ideal answer we stored earlier
     evaluation = evaluate_answer(
-        question_text=question_data['question_text'],
+        question_text=current_question_data['question_text'],
         candidate_answer=request.answer,
-        ideal_answer=question_data['ideal_answer']
+        ideal_answer=current_question_data['ideal_answer']
     )
     
     # Store history
     session["history"].append({
-        "question_id": question_id,
-        "question_text": question_data['question_text'],
+        "question_id": current_question_data['id'],
+        "question_text": current_question_data['question_text'],
         "answer": request.answer,
         "evaluation": evaluation
     })
 
-    # Move to the next question
-    session["current_question_index"] += 1
-    next_index = session["current_question_index"]
-
-    # Check for stage/interview completion
-    if next_index >= len(current_question_list):
-        if stage == 1:
-            total_score = sum(h['evaluation']['average_score'] for h in session['history'] if h['question_id'] in session['stage1_question_ids'])
-            avg_score = total_score / len(session['stage1_question_ids'])
+    # Decide if the interview is over or if we need to generate a new question
+    current_stage = session["stage"]
+    next_stage_threshold = 3 # Let's say we ask 3 questions per stage
+    
+    if len(session["questions_asked"]) >= next_stage_threshold:
+        if current_stage == 1:
+            total_score = sum(h['evaluation']['average_score'] for h in session['history'][-next_stage_threshold:])
+            avg_score = total_score / next_stage_threshold
             
-            if avg_score >= 3.0: # Threshold to pass Stage 1
+            if avg_score >= 3.0: 
                 session["stage"] = 2
-                session["current_question_index"] = 0
-                next_question_id = session["stage2_question_ids"][0]
-                next_question_data = get_question(next_question_id)
+                next_question = generate_excel_question(stage=2)
+                session["questions_asked"].append(next_question.dict())
                 
                 transition_text = generate_transition(
                     feedback="Great job on those warm-up questions.",
-                    next_question=next_question_data['question_text']
+                    next_question=next_question.question_text
                 )
-                return {"session_id": session_id, "question": {"id": next_question_id, "text": transition_text}}
+                return {"session_id": session_id, "question": {"id": next_question.id, "text": transition_text}}
             else:
                 return {"session_id": session_id, "summary": generate_summary(session)}
-        else:
+        else: # Stage 2 complete
             return {"session_id": session_id, "summary": generate_summary(session)}
 
-    # If not complete, get the next question
-    next_question_id = current_question_list[next_index]
-    next_question_data = get_question(next_question_id)
+    # If not complete, generate a new question
+    next_question = generate_excel_question(stage=current_stage)
+    session["questions_asked"].append(next_question.dict())
     
     transition_text = generate_transition(
         feedback=evaluation['feedback'],
-        next_question=next_question_data['question_text']
+        next_question=next_question.question_text
     )
     
     return {
         "session_id": session_id,
-        "question": {"id": next_question_id, "text": transition_text},
+        "question": {"id": next_question.id, "text": transition_text},
         "previous_answer_feedback": evaluation['feedback']
     }
+
 
 def generate_summary(session):
     history = session['history']

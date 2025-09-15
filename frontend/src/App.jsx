@@ -16,15 +16,15 @@ const ExcelLogo = () => (
 );
 
 // --- Axios API Client-- -
-const apiClient = axios.create({
-    baseURL: 'https://mock-ai-interview-sb08.onrender.com',
-    headers: { 'Content-Type': 'application/json' },
-});
-
 // const apiClient = axios.create({
-//     baseURL: 'http://127.0.0.1:8000', // Change this to your local server address
+//     baseURL: 'https://mock-ai-interview-sb08.onrender.com',
 //     headers: { 'Content-Type': 'application/json' },
 // });
+
+const apiClient = axios.create({
+    baseURL: 'http://localhost:8000', // Change this to your local server address
+    headers: { 'Content-Type': 'application/json' },
+});
 
 // --- API Calls ---
 const startInterview = async () => {

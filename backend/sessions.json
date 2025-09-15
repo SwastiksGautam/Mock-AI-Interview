@@ -1,15 +1,13 @@
 {
-  "d0566b64-63e5-467e-b109-73b994ea550a": {
+  "9b8988e1-ab86-492a-9303-739d7c373b91": {
     "stage": 1,
-    "stage1_question_ids": [
-      1,
-      2
+    "questions_asked": [
+      {
+        "id": "200374a4-dbb9-40d9-a709-218ec2a28e6f",
+        "question_text": "Explain how to utilize conditional formatting in Excel to highlight all cells in a range that are higher than the average value of that range.",
+        "ideal_answer": "To use conditional formatting to highlight cells that are higher than the average of a range, you first select the range of cells you want to format. Then, go to the 'Home' tab and click on 'Conditional Formatting'. Choose 'New Rule', then select 'Use a formula to determine which cells to format'. In the formula box, enter '=A1>AVERAGE($A$1:$A$10)', assuming your range is A1 to A10. Click on the 'Format' button, choose your desired formatting style, and then click 'OK'. This rule will then apply the specified formatting to any cell in the range where the value is higher than the range's average."
+      }
     ],
-    "stage2_question_ids": [
-      3,
-      4
-    ],
-    "current_question_index": 0,
     "history": []
   }
 }
