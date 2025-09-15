@@ -2,10 +2,8 @@ import axios from 'axios';
 
 // Create a reusable Axios instance configured for your backend
 const apiClient = axios.create({
-  baseURL: 'http://127.0.0.1:8000', // Your FastAPI backend URL
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: 'https://mock-ai-interview-sb08.onrender.com/api',
+  headers: { 'Content-Type': 'application/json' },
 });
 
 /**
