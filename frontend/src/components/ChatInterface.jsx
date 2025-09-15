@@ -27,8 +27,8 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
             )}
             <div
               className={`max-w-xl p-4 rounded-xl whitespace-pre-wrap transition-all duration-300 ${message.sender === 'ai'
-                  ? 'bg-slate-700 text-slate-200 rounded-tl-none'
-                  : 'bg-blue-600 text-white rounded-br-none'
+                ? 'bg-slate-700 text-slate-200 rounded-tl-none'
+                : 'bg-blue-600 text-white rounded-br-none'
                 }`}
             >
               {message.text}

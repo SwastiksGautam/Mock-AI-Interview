@@ -16,45 +16,83 @@ const ExcelLogo = () => (
 );
 
 // --- Axios API Client-- -
-// const apiClient = axios.create({
-//     baseURL: 'https://mock-ai-interview-sb08.onrender.com',
-//     headers: { 'Content-Type': 'application/json' },
-// });
-
 const apiClient = axios.create({
-    baseURL: 'http://localhost:8000', // Change this to your local server address
-    headers: { 'Content-Type': 'application/json' },
+    baseURL: 'https://mock-ai-interview-sb08.onrender.com', // live Render backend
 });
+
 
 // --- API Calls ---
 const startInterview = async () => {
     try {
-        const response = await apiClient.post('/start', { candidate_name: 'John Doe' });
-        return response.data; // return data; do NOT call setState here
+        const response = await apiClient.post('/start');
+        return response.data;
     } catch (err) {
         console.error('Failed to start interview:', err);
         throw err;
     }
 };
 
-const submitAnswer = async (sessionId, questionIndex, answer) => {
+const submitWrittenAnswer = async (sessionId, answer) => {
     try {
-        const response = await apiClient.post('/answer', {
-            session_id: sessionId,
-            question_index: questionIndex,
-            answer,
-            evaluation_score: 4.0,
-            feedback: 'Good answer', // dummy feedback for testing
+        const formData = new FormData();
+        formData.append('session_id', sessionId);
+        formData.append('answer', answer);
+
+        const response = await apiClient.post('/answer', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
         });
         return response.data;
     } catch (err) {
-        console.error('Failed to submit answer:', err);
+        console.error('Failed to submit written answer:', err);
         throw err;
     }
 };
 
-// --- Chat Interface ---
-const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
+
+const submitVoiceAnswer = async (sessionId, audioFile) => {
+    try {
+        const formData = new FormData();
+        formData.append('session_id', sessionId);
+        formData.append('audio_file', audioFile, 'answer.webm');
+
+        const response = await apiClient.post('/answer', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data;
+    } catch (err) {
+        console.error('Failed to submit voice answer:', err);
+        throw err;
+    }
+};
+
+// --- Start Screen Component ---
+const StartScreen = ({ onStartWritten, onStartVoice }) => (
+    <div className="text-center p-12 bg-slate-800 rounded-xl shadow-lg">
+        <h2 className="text-3xl font-bold mb-4 text-slate-100">
+            AI-Powered Excel Interview
+        </h2>
+        <p className="text-slate-400 mb-8">
+            Test your Excel skills with AI. Choose your interview mode below.
+        </p>
+        <div className="flex justify-center gap-4">
+            <button
+                onClick={onStartWritten}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg"
+            >
+                Written Interview
+            </button>
+            <button
+                onClick={onStartVoice}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg"
+            >
+                Voice Interview
+            </button>
+        </div>
+    </div>
+);
+
+// --- Written Chat Interface ---
+const WrittenChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
     const [currentAnswer, setCurrentAnswer] = useState('');
     const chatEndRef = useRef(null);
 
@@ -77,11 +115,7 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
                         key={idx}
                         className={`flex items-start gap-4 ${msg.sender === 'user' ? 'justify-end' : ''}`}
                     >
-                        {msg.sender === 'ai' && (
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center font-bold text-slate-900">
-                                AI
-                            </div>
-                        )}
+                        {msg.sender === 'ai' && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center font-bold text-slate-900">AI</div>}
                         <div
                             className={`max-w-xl p-4 rounded-xl whitespace-pre-wrap ${msg.sender === 'ai'
                                 ? 'bg-slate-700 text-slate-200 rounded-tl-none'
@@ -90,19 +124,12 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
                         >
                             {msg.text}
                         </div>
-                        {msg.sender === 'user' && (
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold">
-                                You
-                            </div>
-                        )}
+                        {msg.sender === 'user' && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold">You</div>}
                     </div>
                 ))}
                 <div ref={chatEndRef} />
             </div>
-            <form
-                onSubmit={handleSubmit}
-                className="flex gap-4 mt-4 border-t border-slate-700 pt-4"
-            >
+            <form onSubmit={handleSubmit} className="flex gap-4 mt-4 border-t border-slate-700 pt-4">
                 <textarea
                     value={currentAnswer}
                     onChange={(e) => setCurrentAnswer(e.target.value)}
@@ -110,9 +137,7 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
                     disabled={isLoading}
                     rows={3}
                     className="flex-grow bg-slate-700 text-white rounded-lg p-3 focus:ring-2 focus:ring-green-500 focus:outline-none resize-none disabled:opacity-50"
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e);
-                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e); }}
                 />
                 <button
                     type="submit"
@@ -126,21 +151,97 @@ const ChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
     );
 };
 
+// --- Voice Chat Interface ---
+// --- Voice Chat Interface ---
+const VoiceChatInterface = ({ chatHistory, onAnswerSubmit, isLoading }) => {
+    const [isRecording, setIsRecording] = useState(false);
+    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const [audioChunks, setAudioChunks] = useState([]);
+    const chatEndRef = useRef(null);
+
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [chatHistory]);
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
+
+            recorder.ondataavailable = e => setAudioChunks(prev => [...prev, e.data]);
+            recorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' });
+
+                // ✅ Check if audioBlob is empty
+                if (!audioBlob || audioBlob.size === 0) {
+                    alert("Audio file is empty. Please record your answer.");
+                    setAudioChunks([]);
+                    setIsRecording(false);
+                    return;
+                }
+
+                onAnswerSubmit(audioBlob);
+                setAudioChunks([]);
+                setIsRecording(false);
+            };
+
+            setMediaRecorder(recorder);
+            recorder.start();
+            setIsRecording(true);
+        } catch (err) {
+            console.error('Failed to get microphone access:', err);
+            alert('Please enable microphone access to use this feature.');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder) mediaRecorder.stop();
+    };
+
+    return (
+        <div className="flex flex-col h-[70vh] bg-slate-800 rounded-xl shadow-2xl p-4">
+            <div className="flex-grow overflow-y-auto pr-4 space-y-6">
+                {chatHistory.map((msg, idx) => (
+                    <div key={idx} className={`flex items-start gap-4 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
+                        {msg.sender === 'ai' && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center font-bold text-slate-900">AI</div>}
+                        <div className={`max-w-xl p-4 rounded-xl whitespace-pre-wrap ${msg.sender === 'ai' ? 'bg-slate-700 text-slate-200 rounded-tl-none' : 'bg-blue-600 text-white rounded-br-none'}`}>
+                            {msg.text}
+                        </div>
+                        {msg.sender === 'user' && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold">You</div>}
+                    </div>
+                ))}
+                <div ref={chatEndRef} />
+            </div>
+            <div className="flex gap-4 mt-4 border-t border-slate-700 pt-4">
+                <div className="flex-grow text-slate-400 p-3 rounded-lg flex justify-center items-center">
+                    {isRecording ? <p className="text-red-400 animate-pulse">Recording... Click to stop.</p> : <p>Click the microphone to start.</p>}
+                </div>
+                <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={isLoading}
+                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-transform transform hover:scale-105 disabled:bg-slate-600 ${isRecording ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-8 h-8">
+                        <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" fill={isRecording ? 'none' : 'currentColor'} stroke={isRecording ? 'currentColor' : 'none'} />
+                        <path fillRule="evenodd" clipRule="evenodd" d="M12 2.25c-5.16 0-9.25 4.09-9.25 9.25S6.84 20.75 12 20.75s9.25-4.09 9.25-9.25S17.16 2.25 12 2.25zm0 18.25c-4.97 0-9-4.03-9-9s4.03-9 9-9 9 4.03 9 9-4.03 9-9 9z" fill={isRecording ? 'none' : 'currentColor'} />
+                        <path d="M19.5 10.5h-2.25A6.75 6.75 0 0012 3.75V2.25A8.25 8.25 0 0120.25 10.5H19.5z" fill={isRecording ? 'none' : 'currentColor'} />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // --- Summary Report ---
 const SummaryReport = ({ summary, onRestart }) => {
     if (!summary) return null;
 
-    const getScoreColor = (score) =>
-        score >= 4 ? 'text-green-400' : score >= 2.5 ? 'text-yellow-400' : 'text-red-400';
+    const getScoreColor = (score) => score >= 4 ? 'text-green-400' : score >= 2.5 ? 'text-yellow-400' : 'text-red-400';
 
     return (
         <div className="p-8 bg-slate-800 rounded-xl shadow-2xl">
-            <h2 className="text-3xl font-bold text-center mb-4 text-green-400">
-                Interview Summary
-            </h2>
-            <p className="text-center text-slate-400 mb-8">
-                Here's your performance breakdown:
-            </p>
+            <h2 className="text-3xl font-bold text-center mb-4 text-green-400">Interview Summary</h2>
+            <p className="text-center text-slate-400 mb-8">Here's your performance breakdown:</p>
             <div className="text-center mb-8">
                 <p className="text-slate-300 text-lg">Overall Score</p>
                 <p className={`text-7xl font-bold ${getScoreColor(summary.overall_score || 0)}`}>
@@ -152,28 +253,14 @@ const SummaryReport = ({ summary, onRestart }) => {
                 <div className="bg-slate-900/50 p-6 rounded-lg">
                     <h3 className="text-xl font-semibold mb-4 text-green-400">✅ Strengths</h3>
                     {summary.strengths?.length ? (
-                        <ul className="list-disc list-inside text-slate-300">
-                            {summary.strengths.map((s, i) => (
-                                <li key={i}>{s}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-slate-400">No specific strengths identified.</p>
-                    )}
+                        <ul className="list-disc list-inside text-slate-300">{summary.strengths.map((s, i) => (<li key={i}>{s}</li>))}</ul>
+                    ) : (<p className="text-slate-400">No specific strengths identified.</p>)}
                 </div>
                 <div className="bg-slate-900/50 p-6 rounded-lg">
-                    <h3 className="text-xl font-semibold mb-4 text-yellow-400">
-                        🔍 Areas for Improvement
-                    </h3>
+                    <h3 className="text-xl font-semibold mb-4 text-yellow-400">🔍 Areas for Improvement</h3>
                     {summary.areas_for_improvement?.length ? (
-                        <ul className="list-disc list-inside text-slate-300">
-                            {summary.areas_for_improvement.map((a, i) => (
-                                <li key={i}>{a}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-slate-400">No major areas for improvement noted.</p>
-                    )}
+                        <ul className="list-disc list-inside text-slate-300">{summary.areas_for_improvement.map((a, i) => (<li key={i}>{a}</li>))}</ul>
+                    ) : (<p className="text-slate-400">No major areas for improvement noted.</p>)}
                 </div>
             </div>
             <div className="bg-slate-900/50 p-6 rounded-lg mb-8">
@@ -195,19 +282,19 @@ const SummaryReport = ({ summary, onRestart }) => {
 // --- Main App ---
 export default function App() {
     const [interviewState, setInterviewState] = useState('not_started');
+    const [interviewMode, setInterviewMode] = useState(null);
     const [sessionId, setSessionId] = useState(null);
     const [chatHistory, setChatHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [summary, setSummary] = useState(null);
-    const [questionIndex, setQuestionIndex] = useState(0);
     const [error, setError] = useState(null);
 
-    const handleStart = async () => {
+    const handleStart = async (mode) => {
         setIsLoading(true);
         setError(null);
         setSummary(null);
         setChatHistory([]);
-        setQuestionIndex(0);
+        setInterviewMode(mode);
         try {
             const data = await startInterview();
             setSessionId(data.session_id);
@@ -221,22 +308,32 @@ export default function App() {
     };
 
     const handleAnswerSubmit = async (answer) => {
-        setChatHistory((prev) => [...prev, { sender: 'user', text: answer }]);
         setIsLoading(true);
+        setError(null);
         try {
-            const data = await submitAnswer(sessionId, questionIndex, answer);
+            let data;
+            if (interviewMode === 'written') {
+                setChatHistory((prev) => [...prev, { sender: 'user', text: answer }]);
+                data = await submitWrittenAnswer(sessionId, answer);
+            } else { // interviewMode === 'voice'
+                setChatHistory((prev) => [...prev, { sender: 'user', text: "Speaking..." }]);
+                data = await submitVoiceAnswer(sessionId, answer);
+            }
 
             if (data.error && data.new_session_id) {
                 setSessionId(data.new_session_id);
                 setChatHistory([{ sender: 'ai', text: data.question.text }]);
                 setError('Session expired. Restarted automatically.');
-                setQuestionIndex(0);
             } else if (data.summary) {
                 setSummary(data.summary);
                 setInterviewState('completed');
             } else if (data.question) {
-                setChatHistory((prev) => [...prev, { sender: 'ai', text: data.question.text }]);
-                setQuestionIndex((prev) => prev + 1);
+                const answerText = data.previous_answer_feedback || 'Answer was not provided.';
+                setChatHistory((prev) => {
+                    const updatedHistory = [...prev];
+                    updatedHistory[updatedHistory.length - 1] = { sender: 'user', text: answerText };
+                    return [...updatedHistory, { sender: 'ai', text: data.question.text }];
+                });
             }
         } catch {
             setError('Error submitting your answer.');
@@ -251,33 +348,16 @@ export default function App() {
 
         switch (interviewState) {
             case 'not_started':
-                return (
-                    <div className="text-center p-12 bg-slate-800 rounded-xl shadow-lg">
-                        <h2 className="text-3xl font-bold mb-4 text-slate-100">
-                            AI-Powered Excel Interview
-                        </h2>
-                        <p className="text-slate-400 mb-8">
-                            Test your Excel skills with AI. Click below to start.
-                        </p>
-                        <button
-                            onClick={handleStart}
-                            disabled={isLoading}
-                            className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg"
-                        >
-                            {isLoading ? 'Initializing...' : 'Start Interview'}
-                        </button>
-                    </div>
-                );
+                return <StartScreen onStartWritten={() => handleStart('written')} onStartVoice={() => handleStart('voice')} />;
             case 'in_progress':
-                return (
-                    <ChatInterface
-                        chatHistory={chatHistory}
-                        onAnswerSubmit={handleAnswerSubmit}
-                        isLoading={isLoading}
-                    />
-                );
+                if (interviewMode === 'written') {
+                    return <WrittenChatInterface chatHistory={chatHistory} onAnswerSubmit={handleAnswerSubmit} isLoading={isLoading} />;
+                } else if (interviewMode === 'voice') {
+                    return <VoiceChatInterface chatHistory={chatHistory} onAnswerSubmit={handleAnswerSubmit} isLoading={isLoading} />;
+                }
+                break;
             case 'completed':
-                return <SummaryReport summary={summary} onRestart={handleStart} />;
+                return <SummaryReport summary={summary} onRestart={() => handleStart(interviewMode)} />;
             default:
                 return null;
         }
