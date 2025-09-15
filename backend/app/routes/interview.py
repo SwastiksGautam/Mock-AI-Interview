@@ -6,7 +6,7 @@ import io
 import openai
 from pydantic import BaseModel
 from fastapi import UploadFile, HTTPException
-from pydub import AudioSegment  # New import
+
 
 # Load the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
