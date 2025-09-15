@@ -1,7 +1,6 @@
 # app/services/evaluator.py
 import os
 import json
-import uuid
 import io
 import openai
 from pydantic import BaseModel
