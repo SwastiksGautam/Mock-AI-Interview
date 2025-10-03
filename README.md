@@ -4,70 +4,76 @@ AI-powered mock interview platform for testing and improving Excel skills.
 Built with FastAPI (backend) and React (frontend), it simulates a technical Excel interview, automatically generates questions, evaluates answers, and provides a detailed performance summary with strengths and areas for improvement.
 
 🚀 Features
+🚀 Features
 
-Interactive AI Interview
+🎯 Interactive AI Interview
 
 Stage 1: Foundational MCQs
 
 Stage 2: Advanced open-ended Excel questions
 
-AI-Powered Question Generation
+🧠 AI-Powered Question Generation
 
-Dynamic Excel interview questions (via OpenAI GPT models)
+Dynamic Excel interview questions via OpenAI GPT
 
 Covers shortcuts, formulas, functions, and data management
 
-Real-Time Answer Evaluation
+⚖️ Real-Time Answer Evaluation
 
 Scored (1–5) on correctness, completeness, clarity, and best practices
 
 Concise, AI-driven feedback
 
-Dynamic Transitions
+🔄 Dynamic Transitions
 
-Smooth conversational flow between questions
+Natural conversational flow between questions
 
-Performance Summary
+📊 Performance Summary
 
 Overall score (/5)
 
-Key strengths & areas for improvement
+Key strengths & improvement areas
 
-Detailed question-by-question breakdown
+Detailed breakdown of each question
 
-Modern UI
+💻 Modern UI
 
-React + TailwindCSS
+React + TailwindCSS for clean design
 
 Chat-like interface with smooth animations
 
 Summary report visualization
 
 🛠️ Tech Stack
+
 Backend
 
-FastAPI (Python)
+⚡ FastAPI (Python)
 
-OpenAI GPT (questions, evaluation, transitions, summaries)
+🤖 OpenAI GPT (questions, evaluation, transitions, summaries)
 
-SQLite (prototype session storage)
+🗄 SQLite (prototype session storage)
 
-CORS-enabled API
+🌐 CORS-enabled API
 
 Frontend
 
-React (Vite/CRA)
+⚛️ React (Vite/CRA)
 
-Axios (API calls)
+📡 Axios (API calls)
 
-TailwindCSS (UI design)
+🎨 TailwindCSS (UI styling)
 
 ⚙️ System Workflow
 
-1️⃣ Start Interview – Backend generates first Excel question.
-2️⃣ Answer Submission – User submits → AI evaluates → Score + Feedback.
-3️⃣ Stage Transition – Performance ≥ 3.0/5 after 5 Stage 1 Qs → Stage 2. Otherwise → summary.
-4️⃣ Performance Summary – AI provides strengths + improvement areas with detailed feedback.
+1️⃣ Start Interview → Backend generates first Excel question
+2️⃣ Answer Submission → User submits → AI evaluates (score + feedback)
+3️⃣ Stage Transition →
+
+If performance ≥ 3.0/5 after 5 Qs → move to Stage 2 (advanced)
+
+Otherwise → summary & end session
+4️⃣ Performance Summary → AI provides strengths, improvement areas, and detailed feedback
 
 📂 Project Structure
 📦 Excel-Mock-Interviewer
